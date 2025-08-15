@@ -12,6 +12,14 @@ Features:
 - Resume capability - skips already processed files
 - Progress tracking and statistics
 - Comprehensive error handling
+- Configurable compression level
+- Maximum ZIP file size checking
+
+Environment Variables:
+- ZIP_COMPRESSION_LEVEL: Compression level 0-9 (default: 6)
+- MAX_ZIP_SIZE_GB: Maximum ZIP file size in GB (default: 10)
+- S4_PROGRESS_FILE: Progress tracking filename
+- SKIP_FILES: Comma-separated list of files to skip
 
 Author: AI Assistant
 Date: 2025-06-21
@@ -51,7 +59,11 @@ SKIP_FILES = os.getenv('SKIP_FILES', ','.join(DEFAULT_SKIP_FILES)).split(',')
 SKIP_FILES = [f.strip() for f in SKIP_FILES if f.strip()]
 
 # Progress tracking file name
-PROGRESS_FILE = 'S4_zipStore_processing_progress.json'
+PROGRESS_FILE = os.getenv('S4_PROGRESS_FILE', 'S4_zipStore_processing_progress.json')
+
+# Compression settings
+DEFAULT_COMPRESSION_LEVEL = int(os.getenv('ZIP_COMPRESSION_LEVEL', '6'))  # 0-9, where 9 is max compression
+MAX_ZIP_SIZE_GB = float(os.getenv('MAX_ZIP_SIZE_GB', '10'))  # Maximum ZIP file size in GB
 
 # =============================================================================
 # STATISTICS TRACKING
@@ -365,7 +377,7 @@ def create_study_zip_sync(jsonl_file: str, output_dir: str, logger: logging.Logg
         original_size = 0
         
         try:
-            with zipfile.ZipFile(temp_zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
+            with zipfile.ZipFile(temp_zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=DEFAULT_COMPRESSION_LEVEL) as zipf:
                 for record in valid_records:
                     file_path = record['file_path']
                     

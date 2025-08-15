@@ -1,0 +1,27 @@
+# Core Dependencies for DICOM Processing Pipeline
+# =================================================
+# python version 3.9
+
+# DICOM file processing
+pydicom
+
+# Data manipulation and Excel output
+pandas
+openpyxl  # Excel file support
+
+# Document processing
+python-docx  # DOCX file support
+PyPDF2  # PDF file support
+
+# Progress bars and UI
+tqdm
+
+# Optional but recommended for better performance
+numpy # Often used with pydicom
+Pillow  # Image processing support
+
+# AI-powered document extraction (S5 stage)
+openai  # OpenAI API client
+ollama  # Native Ollama client for local models
+pydantic  # Data validation for structured outputs
+requests  # HTTP requests for API calls

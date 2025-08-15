@@ -1,7 +1,16 @@
 import os
 import json
-import pandas as pd
 import argparse
+import logging
+from typing import Dict, List, Any, Optional
+from pathlib import Path
+
+try:
+    import pandas as pd
+except ImportError:
+    print("Warning: pandas not installed. Excel output will be unavailable.")
+    print("Install with: pip install pandas openpyxl")
+    pd = None
 
 # =============================================================================
 # CONFIGURATION - Files to skip during processing
@@ -12,11 +21,13 @@ DEFAULT_SKIP_FILES = [
     "ALL_PATIENTS_inCT.json",
     "ALL_PATIENTS_inCT.jsonl", 
     "summary.jsonl",
-    "CONCAT_ALL.jsonl"
+    "CONCAT_ALL.jsonl",  # Fixed missing comma
     "processed_files.jsonl",
     "temp.jsonl",
     "backup.jsonl",
-    "test.jsonl"
+    "test.jsonl",
+    "S2_ALL_PATIENTS_inCT.json",  # Added S2 output file
+    "S2_ALL_PATIENTS_inCT.xlsx"   # Added S2 output file
 ]
 
 # Get skip files from environment variable or use default
@@ -30,11 +41,29 @@ print("-" * 50)
 # MAIN PROCESSING FUNCTIONS
 # =============================================================================
 
-def S2_process_jsonl_files(folder_path, output_json, output_excel):
-    """Process JSONL files and extract patient data with CT object counts."""
+def S2_process_jsonl_files(folder_path: str, output_json: str, output_excel: Optional[str] = None) -> int:
+    """Process JSONL files and extract patient data with CT object counts.
+    
+    Args:
+        folder_path: Directory containing JSONL files
+        output_json: Path for output JSON file
+        output_excel: Optional path for output Excel file
+        
+    Returns:
+        Number of records processed
+    """
     
     # Fields to extract
-    fields = ["patient_name", "study_date", "patient_age", "study_modality", "study_body_part", "institution_name"]
+    # Fields to extract from DICOM data for patient summaries
+    fields = [
+        "patient_id",           # NEW: Patient ID as requested
+        "patient_name", 
+        "study_date", 
+        "patient_age", 
+        "study_modality", 
+        "study_body_part", 
+        "institution_name"
+    ]
 
     # Container for collected data
     extracted_data = []
@@ -52,13 +81,15 @@ def S2_process_jsonl_files(folder_path, output_json, output_excel):
             file_path = os.path.join(folder_path, filename)
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
-                    # Count total lines in the file
-                    lines = f.readlines()
-                    total_lines = len(lines)
+                    # More memory-efficient: count lines without loading all into memory
+                    total_lines = sum(1 for _ in f)
+                    
+                    # Reset to beginning and read first line only
+                    f.seek(0)
+                    first_line = f.readline()
                     
                     # Process the first line for patient data
-                    if lines:
-                        first_line = lines[0]
+                    if first_line:
                         record = json.loads(first_line)
 
                         # Extract desired fields, filling missing with None
@@ -78,6 +109,7 @@ def S2_process_jsonl_files(folder_path, output_json, output_excel):
                         processed_files.append(filename)
                     else:
                         # Handle empty files
+                        print(f"Warning: Empty file {filename}")
                         filtered_record = {key: None for key in fields}
                         filtered_record["source_file"] = filename
                         filtered_record["ct_objects_count"] = 0
@@ -99,13 +131,21 @@ def S2_process_jsonl_files(folder_path, output_json, output_excel):
     with open(output_json, 'w', encoding='utf-8') as out_json:
         json.dump(extracted_data, out_json, ensure_ascii=False, indent=2)
 
-    # Write to Excel
-    if extracted_data:
-        df = pd.DataFrame(extracted_data)
-        df.to_excel(output_excel, index=False)
+    # Write to Excel if pandas is available and output_excel is specified
+    if extracted_data and output_excel:
+        if pd:
+            df = pd.DataFrame(extracted_data)
+            try:
+                df.to_excel(output_excel, index=False, engine='openpyxl')
+            except ImportError:
+                print("Warning: openpyxl not installed. Skipping Excel output.")
+                print("Install with: pip install openpyxl")
+        else:
+            print("Warning: pandas not available. Skipping Excel output.")
         print(f"Saved {len(extracted_data)} records to:")
         print(f"  JSON: {output_json}")
-        print(f"  Excel: {output_excel}")
+        if output_excel and pd:
+            print(f"  Excel: {output_excel}")
         print(f"Added 'ct_objects_count' column showing number of CT objects per file")
         print(f"Added 'dicom_folder_path' column showing the folder containing DICOM files")
         
@@ -121,13 +161,23 @@ def S2_process_jsonl_files(folder_path, output_json, output_excel):
         # Display summary statistics
         print(f"\nData Summary:")
         print(f"Total patients: {len(extracted_data)}")
-        print(f"Total CT objects: {df['ct_objects_count'].sum()}")
-        print(f"Average CT objects per patient: {df['ct_objects_count'].mean():.1f}")
+        if pd and 'df' in locals():
+            print(f"Total CT objects: {df['ct_objects_count'].sum()}")
+            print(f"Average CT objects per patient: {df['ct_objects_count'].mean():.1f}")
+        else:
+            total_ct = sum(rec.get('ct_objects_count', 0) for rec in extracted_data)
+            avg_ct = total_ct / len(extracted_data) if extracted_data else 0
+            print(f"Total CT objects: {total_ct}")
+            print(f"Average CT objects per patient: {avg_ct:.1f}")
         
         # Display column information
         print(f"\nColumns in output files:")
-        for i, col in enumerate(df.columns, 1):
-            print(f"  {i}. {col}")
+        if pd and 'df' in locals():
+            for i, col in enumerate(df.columns, 1):
+                print(f"  {i}. {col}")
+        elif extracted_data:
+            for i, col in enumerate(extracted_data[0].keys(), 1):
+                print(f"  {i}. {col}")
         
     else:
         print("No valid data extracted.")
@@ -230,8 +280,14 @@ Examples:
                 exit(0)
 
     # Create output directory if it doesn't exist
-    os.makedirs(os.path.dirname(output_json), exist_ok=True)
-    os.makedirs(os.path.dirname(output_excel), exist_ok=True)
+    output_json_dir = os.path.dirname(output_json)
+    if output_json_dir:
+        os.makedirs(output_json_dir, exist_ok=True)
+    
+    if output_excel:
+        output_excel_dir = os.path.dirname(output_excel)
+        if output_excel_dir:
+            os.makedirs(output_excel_dir, exist_ok=True)
 
     print(f"Processing JSONL files in: {folder_path}")
     print(f"Output JSON: {output_json}")

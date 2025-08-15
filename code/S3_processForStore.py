@@ -15,7 +15,7 @@ DEFAULT_SKIP_FILES = [
     "ALL_PATIENTS_inCT.json",
     "ALL_PATIENTS_inCT.jsonl", 
     "summary.jsonl",
-    "CONCAT_ALL.jsonl"
+    "CONCAT_ALL.jsonl",  # Fixed missing comma
     "processed_files.jsonl",
     "temp.jsonl",
     "backup.jsonl",

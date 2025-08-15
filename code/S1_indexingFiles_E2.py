@@ -5,14 +5,31 @@ import tempfile
 import asyncio
 import argparse
 import multiprocessing
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
+import time
+from datetime import datetime
 
 # 3rd-party libs
-import pydicom
-from docx import Document as DocxDocument
-import PyPDF2
+try:
+    import pydicom
+except ImportError:
+    logger.warning("pydicom not installed. DICOM processing will be unavailable.")
+    pydicom = None
+
+try:
+    from docx import Document as DocxDocument
+except ImportError:
+    logger.warning("python-docx not installed. DOCX processing will be unavailable.")
+    DocxDocument = None
+
+try:
+    import PyPDF2
+except ImportError:
+    logger.warning("PyPDF2 not installed. PDF processing will be unavailable.")
+    PyPDF2 = None
+
 from tqdm import tqdm
 
 ###############################################################################
@@ -168,7 +185,42 @@ def build_all_files_json(folders_json: str, output_json: str, write_interval: in
 ###############################################################################
 
 def read_dicom_metadata(file_path: str) -> Dict[str, Any]:
-    dataset = pydicom.dcmread(file_path, stop_before_pixels=True, force=False)
+    """Extract metadata from a DICOM file with error handling."""
+    if not pydicom:
+        raise ImportError("pydicom is required for DICOM processing")
+    
+    try:
+        dataset = pydicom.dcmread(file_path, stop_before_pixels=True, force=False)
+    except Exception as e:
+        logger.warning(f"Failed to read DICOM file {file_path}: {e}")
+        # Try with force=True as fallback
+        try:
+            dataset = pydicom.dcmread(file_path, stop_before_pixels=True, force=True)
+        except Exception as e2:
+            logger.error(f"Failed to read DICOM file even with force=True {file_path}: {e2}")
+            raise
+
+    # Extract Pixel Spacing (0028,0030) - can be a list or single value
+    pixel_spacing = getattr(dataset, "PixelSpacing", None)
+    if pixel_spacing:
+        if hasattr(pixel_spacing, '__iter__') and not isinstance(pixel_spacing, str):
+            # Convert list/array to string format (e.g., "1.0\1.0")
+            pixel_spacing_str = "\\".join(str(x) for x in pixel_spacing)
+        else:
+            pixel_spacing_str = str(pixel_spacing)
+    else:
+        pixel_spacing_str = "Unknown"
+    
+    # Extract Image Type (0008,0008) - can be a multivalue field
+    image_type = getattr(dataset, "ImageType", None)
+    if image_type:
+        if hasattr(image_type, '__iter__') and not isinstance(image_type, str):
+            # Convert list/array to string format (e.g., "ORIGINAL\PRIMARY\LOCALIZER\CT_SOM5 TOP")
+            image_type_str = "\\".join(str(x) for x in image_type)
+        else:
+            image_type_str = str(image_type)
+    else:
+        image_type_str = "Unknown"
 
     return {
         "file_path": file_path,
@@ -177,6 +229,7 @@ def read_dicom_metadata(file_path: str) -> Dict[str, Any]:
         "patient_age": str(getattr(dataset, "PatientAge", "Unknown")),
         "study_date": str(getattr(dataset, "StudyDate", "Unknown")),
         "study_time": str(getattr(dataset, "StudyTime", "Unknown")),
+        "study_description": str(getattr(dataset, "StudyDescription", "Unknown")),  # NEW: (0008,1030)
         "study_modality": str(getattr(dataset, "Modality", "Unknown")),
         "study_body_part": str(getattr(dataset, "BodyPartExamined", "Unknown")),
         "study_series_number": str(getattr(dataset, "SeriesNumber", "Unknown")),
@@ -188,16 +241,27 @@ def read_dicom_metadata(file_path: str) -> Dict[str, Any]:
         "series_number": str(getattr(dataset, "SeriesNumber", "Unknown")),
         "slice_thickness": str(getattr(dataset, "SliceThickness", "Unknown")),
         "image_orientation_patient": str(getattr(dataset, "ImageOrientationPatient", "Unknown")),
-        "image_position_patient": str(getattr(dataset, "ImagePositionPatient", "Unknown"))
+        "image_position_patient": str(getattr(dataset, "ImagePositionPatient", "Unknown")),
+        # NEW FIELDS REQUESTED:
+        "pixel_spacing": pixel_spacing_str,  # (0028,0030) Pixel Spacing
+        "image_type": image_type_str,        # (0008,0008) Image Type
+        "slice_location": str(getattr(dataset, "SliceLocation", "Unknown"))  # (0020,1041) Slice Location
     }
 
 async def process_dicom_files(all_files_json: str, concurrency: int = 3, batch_size: int = 50, output_directory: str = ".") -> None:
+    """Process DICOM files with improved batching and error handling."""
+    if not pydicom:
+        logger.error("pydicom not available. Skipping DICOM processing.")
+        return
+        
     all_files = read_json(all_files_json)
     if not all_files:
         return
 
     loop = asyncio.get_event_loop()
     executor = ThreadPoolExecutor(max_workers=concurrency)
+    processed_count = 0
+    error_count = 0
     folder_keys = list(all_files.keys())
 
     async def process_one_folder(folder_key: str) -> None:
@@ -210,6 +274,9 @@ async def process_dicom_files(all_files_json: str, concurrency: int = 3, batch_s
             folder_info["status"] = FolderStatus.DICOM_DONE
             return
 
+        # Initialize counters
+        processed_count = 0
+        error_count = 0
         study_dict = {}
         for i in range(0, len(dicom_files), batch_size):
             batch = dicom_files[i:i+batch_size]
@@ -218,9 +285,10 @@ async def process_dicom_files(all_files_json: str, concurrency: int = 3, batch_s
 
             for result in results:
                 if isinstance(result, Exception):
-                    folder_info["status"] = FolderStatus.ERROR
+                    error_count += 1
                     folder_info["error"] += f"\nDICOM error: {result}"
                     continue
+                processed_count += 1
                 key = (result["study_date"], result["patient_id"], result["station_name"] or result["institution_name"])
                 study_dict.setdefault(key, []).append(result)
 
@@ -234,31 +302,64 @@ async def process_dicom_files(all_files_json: str, concurrency: int = 3, batch_s
         if folder_info["status"] != FolderStatus.ERROR:
             folder_info["status"] = FolderStatus.DICOM_DONE
 
-    for folder_key in tqdm(folder_keys, desc="Processing DICOM metadata"):
-        await process_one_folder(folder_key)
+    # Process folders with progress tracking
+    with tqdm(total=len(folder_keys), desc="Processing DICOM metadata") as pbar:
+        tasks = [process_one_folder(folder_key) for folder_key in folder_keys]
+        for coro in asyncio.as_completed(tasks):
+            await coro
+            pbar.update(1)
 
     atomic_write_json(all_files, all_files_json)
+    logger.info(f"DICOM processing complete: {processed_count} files processed, {error_count} errors")
 
 ###############################################################################
 # DOCUMENT TEXT EXTRACTION
 ###############################################################################
 def extract_pdf_text(file_path: str) -> str:
+    """Extract text from PDF with improved error handling."""
+    if not PyPDF2:
+        return "PyPDF2 not installed"
+    
     try:
         with open(file_path, 'rb') as f:
             reader = PyPDF2.PdfReader(f)
             if reader.is_encrypted:
+                logger.warning(f"PDF is encrypted: {file_path}")
                 return ""
-            return "\n".join(page.extract_text() or "" for page in reader.pages)
+            text_parts = []
+            for i, page in enumerate(reader.pages):
+                try:
+                    text = page.extract_text()
+                    if text:
+                        text_parts.append(text)
+                except Exception as e:
+                    logger.warning(f"Failed to extract page {i} from {file_path}: {e}")
+            return "\n".join(text_parts)
     except Exception as e:
-        logger.error(f"PDF extraction error: {e}")
+        logger.error(f"PDF extraction error for {file_path}: {e}")
         return ""
 
 def extract_docx_text(file_path: str) -> str:
+    """Extract text from DOCX with improved error handling."""
+    if not DocxDocument:
+        return "python-docx not installed"
+    
     try:
         doc = DocxDocument(file_path)
-        return "\n".join(par.text for par in doc.paragraphs)
+        text_parts = []
+        # Extract from paragraphs
+        for par in doc.paragraphs:
+            if par.text.strip():
+                text_parts.append(par.text)
+        # Also extract from tables
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        text_parts.append(cell.text)
+        return "\n".join(text_parts)
     except Exception as e:
-        logger.error(f"DOCX extraction error: {e}")
+        logger.error(f"DOCX extraction error for {file_path}: {e}")
         return ""
 
 def extract_doc_text(file_path: str) -> str:
@@ -313,6 +414,20 @@ async def extract_documents_text(all_files_json: str, output_json: str, concurre
 # PIPELINE ENTRY POINT
 ###############################################################################
 def S1_run_pipeline(root_directory: str, output_directory: str = ".", overwrite: bool = False):
+    """Main entry point for the S1 pipeline."""
+    # Check for required dependencies
+    missing_deps = []
+    if not pydicom:
+        missing_deps.append("pydicom")
+    if not PyPDF2:
+        missing_deps.append("PyPDF2")
+    if not DocxDocument:
+        missing_deps.append("python-docx")
+    
+    if missing_deps:
+        logger.warning(f"Missing optional dependencies: {', '.join(missing_deps)}")
+        logger.warning("Some functionality may be limited. Install with: pip install " + ' '.join(missing_deps))
+    
     asyncio.run(main_workflow(root_directory, output_directory, overwrite))
 
 async def main_workflow(root_dir: str, output_dir: str, overwrite: bool = False):
@@ -329,10 +444,14 @@ async def main_workflow(root_dir: str, output_dir: str, overwrite: bool = False)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Index and extract metadata from DICOM files and documents",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--root", help="Root directory to scan")
     parser.add_argument("--output_dir", help="Output directory for JSON files")
     parser.add_argument("--overwrite", action="store_true", help="Whether to overwrite existing JSONs")
+    parser.add_argument("--concurrency", type=int, help="Override number of concurrent workers")
     args = parser.parse_args()
 
     # Get root directory if not provided

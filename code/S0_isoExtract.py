@@ -12,14 +12,22 @@ import logging
 import subprocess
 import argparse
 import time
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any, Union
+from functools import wraps
+from time import sleep
 
-# Configuration constants
-POWERISO_PATH = r"C:\Users\LEGION\Downloads\PowerISO.9.0.Portable\PowerISO.9.0.Portable\App\PowerISO\piso.exe"
-ALL_JSONS_FILE = "All_jsons_in_dir.json"
-EXTRACTION_FILE_THRESHOLD = 100
-LOG_FILE = "iso_extractor.log"
+# Configuration constants with environment variable support
+POWERISO_PATH = os.getenv(
+    'POWERISO_PATH',
+    r"C:\Users\LEGION\Downloads\PowerISO.9.0.Portable\PowerISO.9.0.Portable\App\PowerISO\piso.exe"
+)
+ALL_JSONS_FILE = os.getenv('ISO_PROGRESS_FILE', "All_jsons_in_dir.json")
+EXTRACTION_FILE_THRESHOLD = int(os.getenv('EXTRACTION_THRESHOLD', '100'))
+LOG_FILE = os.getenv('ISO_LOG_FILE', "iso_extractor.log")
+MAX_RETRIES = int(os.getenv('MAX_RETRIES', '3'))
+RETRY_DELAY = int(os.getenv('RETRY_DELAY', '5'))
 
 # Set up logging
 logging.basicConfig(
@@ -31,6 +39,28 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+
+def retry_on_failure(max_retries: int = MAX_RETRIES, delay: int = RETRY_DELAY):
+    """Decorator to retry failed operations with exponential backoff."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        wait_time = delay * (2 ** attempt)
+                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {wait_time}s...")
+                        sleep(wait_time)
+                    else:
+                        logger.error(f"All {max_retries} attempts failed: {str(e)}")
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 def run_shell_command(command: List[str], input_str: Optional[str] = None) -> Tuple[int, str, str]:
@@ -159,6 +189,7 @@ def count_files_in_dir(directory: str) -> Tuple[int, int, int]:
     return total, dcm_count, no_ext_count
 
 
+@retry_on_failure(max_retries=2, delay=3)
 def extract_iso(iso_record, base_output_dir, index, total_count):
     """
     Extract one ISO using PowerISO.
@@ -206,7 +237,8 @@ def extract_iso(iso_record, base_output_dir, index, total_count):
     # Verify PowerISO exists
     if not os.path.exists(POWERISO_PATH):
         iso_record["status"] = "error"
-        iso_record["error_message"] = f"PowerISO not found at: {POWERISO_PATH}"
+        iso_record["error_message"] = f"PowerISO not found at: {POWERISO_PATH}. Set POWERISO_PATH environment variable."
+        logger.error(iso_record['error_message'])
         print(f"[{index}/{total_count}] {iso_record['error_message']}")
         return iso_record
 
@@ -288,10 +320,22 @@ def save_progress(iso_list: List[Dict[str, Any]]) -> bool:
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Extract ISO files using PowerISO")
+    parser = argparse.ArgumentParser(
+        description="Extract ISO files using PowerISO",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Environment Variables:
+  POWERISO_PATH       Path to PowerISO executable
+  ISO_PROGRESS_FILE   Progress tracking file (default: All_jsons_in_dir.json)
+  EXTRACTION_THRESHOLD Minimum files for successful extraction (default: 100)
+  ISO_LOG_FILE        Log file path (default: iso_extractor.log)
+  MAX_RETRIES         Maximum retry attempts (default: 3)
+  RETRY_DELAY         Initial retry delay in seconds (default: 5)
+        """
+    )
     parser.add_argument("--search-dir", help="Directory to search for ISO files")
     parser.add_argument("--output-dir", default="flat_iso_extract", 
                         help="Subfolder name for extractions (default: flat_iso_extract)")
+    parser.add_argument("--poweriso-path", help="Override PowerISO executable path")
     return parser.parse_args()
 
 
@@ -304,6 +348,12 @@ def main() -> None:
      - After each ISO, save progress to JSON
     """
     args = parse_args()
+    
+    # Override PowerISO path if provided
+    global POWERISO_PATH
+    if args.poweriso_path:
+        POWERISO_PATH = args.poweriso_path
+        logger.info(f"Using PowerISO path: {POWERISO_PATH}")
     
     # Get search directory
     search_dir = args.search_dir
