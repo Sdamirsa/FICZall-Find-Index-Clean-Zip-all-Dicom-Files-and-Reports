@@ -227,10 +227,18 @@ def extract_iso(iso_record, base_output_dir, index, total_count):
             print(f"[{index}/{total_count}] Already extracted (found {existing_total} files): {iso_path}")
             return iso_record
 
-    # Verify ISO file exists
+    # Verify ISO file exists and path is safe
     if not os.path.exists(iso_path):
         iso_record["status"] = "error"
         iso_record["error_message"] = f"ISO file not found: {iso_path}"
+        print(f"[{index}/{total_count}] {iso_record['error_message']}")
+        return iso_record
+    
+    # Basic path validation for security
+    if ".." in iso_path or not os.path.abspath(iso_path).startswith(os.path.abspath(".")):
+        iso_record["status"] = "error"
+        iso_record["error_message"] = f"Suspicious ISO file path detected: {iso_path}"
+        logger.warning(f"Blocked suspicious path: {iso_path}")
         print(f"[{index}/{total_count}] {iso_record['error_message']}")
         return iso_record
 

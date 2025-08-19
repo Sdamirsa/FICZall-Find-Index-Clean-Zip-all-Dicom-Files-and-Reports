@@ -11,6 +11,15 @@ from typing import Dict, List, Any, Optional
 import time
 from datetime import datetime
 
+###############################################################################
+# LOGGING CONFIGURATION
+###############################################################################
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 # 3rd-party libs
 try:
     import pydicom
@@ -31,15 +40,6 @@ except ImportError:
     PyPDF2 = None
 
 from tqdm import tqdm
-
-###############################################################################
-# LOGGING CONFIGURATION
-###############################################################################
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
 
 ###############################################################################
 # ENUM-LIKE STATUS

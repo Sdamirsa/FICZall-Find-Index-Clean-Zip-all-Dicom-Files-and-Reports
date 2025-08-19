@@ -285,14 +285,21 @@ class S0ZipExtractor:
                 file_list = zip_ref.namelist()
                 
                 # Validate file paths for security
+                safe_files = []
                 for file_path in file_list:
                     if os.path.isabs(file_path) or ".." in file_path:
-                        self.logger.warning(f"Suspicious file path in {zip_path_str}: {file_path}")
+                        self.logger.warning(f"Skipping suspicious file path in {zip_path_str}: {file_path}")
                         continue
+                    safe_files.append(file_path)
                 
-                # Extract all files
-                zip_ref.extractall(zip_info.extract_path)
-                extracted_files = file_list
+                if not safe_files:
+                    self.logger.error(f"No safe files to extract in {zip_path_str}")
+                    return False
+                
+                # Extract only safe files
+                for file_path in safe_files:
+                    zip_ref.extract(file_path, zip_info.extract_path)
+                extracted_files = safe_files
             
             extraction_time = time.time() - start_time
             

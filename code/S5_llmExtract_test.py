@@ -36,9 +36,9 @@ try:
     # Import the LLMClientManager from main S5 module
     sys.path.insert(0, str(Path(__file__).parent))
     from S5_llmExtract import LLMClientManager
-    print("✓ Successfully imported required modules")
+    print("Successfully imported required modules")
 except ImportError as e:
-    print(f"✗ Import error: {e}")
+    print(f"Import error: {e}")
     print("Please install dependencies: pip install openai pydantic ollama")
     sys.exit(1)
 
@@ -85,14 +85,14 @@ def test_llm_config():
         print(f"API Key: {'*' * len(api_key) if api_key != 'ollama' else 'Not required (Ollama)'}")
         
         if LLMConfig.validate_config():
-            print("✓ Configuration is valid")
+            print("Configuration is valid")
             return True
         else:
-            print("✗ Configuration is invalid")
+            print("Configuration is invalid")
             return False
             
     except Exception as e:
-        print(f"✗ Configuration error: {e}")
+        print(f"Configuration error: {e}")
         return False
 
 def test_client_manager():
@@ -108,14 +108,14 @@ def test_client_manager():
         logger = logging.getLogger('test_client_manager')
         
         client_manager = LLMClientManager(logger)
-        print(f"✓ {client_manager.client_type} client manager initialized successfully")
+        print(f"{client_manager.client_type} client manager initialized successfully")
         print(f"   Client type: {client_manager.client_type}")
         print(f"   OpenAI client available: {client_manager.openai_client is not None}")
         print(f"   Ollama client available: {client_manager.ollama_client is not None}")
         return client_manager
         
     except Exception as e:
-        print(f"✗ Client manager initialization error: {e}")
+        print(f"Client manager initialization error: {e}")
         print(f"Traceback: {traceback.format_exc()}")
         return None
 
@@ -126,7 +126,7 @@ def test_llm_extraction(client_manager):
     print("="*50)
     
     try:
-        print("📤 Sending request to LLM via client manager...")
+        print("Sending request to LLM via client manager...")
         print(f"   Client type: {client_manager.client_type}")
         print(f"   Model: {LLMConfig.MODEL_NAME}")
         if client_manager.client_type == LLMClientType.OPENAI:
@@ -142,7 +142,7 @@ def test_llm_extraction(client_manager):
             use_simple_schema=False  # Use comprehensive MedicalReportExtraction schema
         )
         
-        print("📥 Received response from client manager")
+        print("Received response from client manager")
         
         # Check extraction result
         if extraction_result['success']:
@@ -150,7 +150,7 @@ def test_llm_extraction(client_manager):
             parsing_method = extraction_result.get('response_metadata', {}).get('parsing_method', 'unknown')
             client_type = extraction_result.get('client_type', 'unknown')
             
-            print(f"✓ Successfully extracted data using {parsing_method} method")
+            print(f"Successfully extracted data using {parsing_method} method")
             print(f"  Client type: {client_type}")
             
             # Display results
@@ -173,23 +173,23 @@ def test_llm_extraction(client_manager):
             # Show response metadata
             response_metadata = extraction_result.get('response_metadata', {})
             if response_metadata:
-                print(f"\n📊 Response metadata:")
+                print(f"\nResponse metadata:")
                 for key, value in response_metadata.items():
                     print(f"  {key}: {value}")
             
             # Show parsing method details
-            print(f"\n📋 Parsing method used: {parsing_method}")
-            print(f"📋 Client used: {client_type}")
+            print(f"\nParsing method used: {parsing_method}")
+            print(f"Client used: {client_type}")
             
             return True
         else:
-            print(f"✗ Extraction failed: {extraction_result['error_message']}")
+            print(f"Extraction failed: {extraction_result['error_message']}")
             print(f"  Error type: {extraction_result['error_type']}")
             
             # Show full response for debugging
             full_response = extraction_result.get('full_response')
             if full_response:
-                print("\n📋 Full response details:")
+                print("\nFull response details:")
                 if isinstance(full_response, dict):
                     for key, value in full_response.items():
                         if isinstance(value, str) and len(value) > 200:
@@ -202,7 +202,7 @@ def test_llm_extraction(client_manager):
             return False
             
     except Exception as e:
-        print(f"✗ Extraction error: {e}")
+        print(f"Extraction error: {e}")
         print(f"Error type: {type(e).__name__}")
         print(f"Traceback: {traceback.format_exc()}")
         return False
@@ -234,26 +234,26 @@ def test_connection():
                             model_names.append(str(model))
                     
                     if LLMConfig.MODEL_NAME in model_names:
-                        print(f"✓ Ollama is running and model {LLMConfig.MODEL_NAME} is available")
+                        print(f"Ollama is running and model {LLMConfig.MODEL_NAME} is available")
                         return True
                     else:
-                        print(f"⚠️  Model {LLMConfig.MODEL_NAME} not found in Ollama")
+                        print(f"WARNING: Model {LLMConfig.MODEL_NAME} not found in Ollama")
                         print(f"   Available models: {model_names}")
                         print(f"   Run: ollama pull {LLMConfig.MODEL_NAME}")
                         return False
                 else:
-                    print(f"✗ Ollama responded with status {response.status_code}")
+                    print(f"Ollama responded with status {response.status_code}")
                     return False
             except Exception as e:
-                print(f"✗ Ollama connection error: {e}")
+                print(f"Ollama connection error: {e}")
                 print("   Make sure Ollama is running: ollama serve")
                 return False
         else:
-            print("✓ Using external API, skipping local connectivity test")
+            print("Using external API, skipping local connectivity test")
             return True
             
     except Exception as e:
-        print(f"✗ Connection test error: {e}")
+        print(f"Connection test error: {e}")
         return False
 
 def test_error_handling(client_manager):
@@ -264,7 +264,7 @@ def test_error_handling(client_manager):
     
     try:
         # Test with empty document
-        print("🧪 Testing with empty document...")
+        print("Testing with empty document...")
         
         extraction_result = client_manager.extract_medical_data(
             "", 
@@ -274,23 +274,23 @@ def test_error_handling(client_manager):
         
         if extraction_result['success']:
             extracted_data = extraction_result['extraction_data']
-            print(f"✓ Empty document handled gracefully (studies: {extracted_data.number_of_studies})")
+            print(f"Empty document handled gracefully (studies: {extracted_data.number_of_studies})")
             return True
         elif extraction_result['error_type'] == 'empty_document':
-            print("✓ Empty document rejected appropriately")
+            print("Empty document rejected appropriately")
             return True
         else:
-            print(f"⚠️  Unexpected response for empty document: {extraction_result['error_message']}")
+            print(f"WARNING: Unexpected response for empty document: {extraction_result['error_message']}")
             return True  # Still consider this a success as it handled the error
             
     except Exception as e:
-        print(f"✗ Error handling test failed: {e}")
+        print(f"Error handling test failed: {e}")
         print(f"Traceback: {traceback.format_exc()}")
         return False
 
 def main():
     """Run all tests"""
-    print("🤖 S5 LLM EXTRACTION DUAL CLIENT TEST")
+    print("S5 LLM EXTRACTION DUAL CLIENT TEST")
     print("=" * 60)
     print("This comprehensive test verifies S5 LLM functionality with both OpenAI and Ollama clients")
     print("Note: S5 now includes built-in health checks. This is for advanced debugging.")
@@ -320,7 +320,7 @@ def main():
     else:
         results["LLM Extraction"] = False
         results["Error Handling"] = False
-        print("\n✗ Skipping advanced tests (client manager unavailable)")
+        print("\nSkipping advanced tests (client manager unavailable)")
     
     # Print summary
     print("\n" + "="*60)
@@ -329,19 +329,19 @@ def main():
     
     all_passed = True
     for test_name, passed in results.items():
-        status = "✓ PASS" if passed else "✗ FAIL"
+        status = "PASS" if passed else "FAIL"
         print(f"{test_name:20} {status}")
         if not passed:
             all_passed = False
     
     print("-" * 60)
     if all_passed:
-        print("🎉 ALL TESTS PASSED! S5 LLM extraction is ready to use.")
-        print(f"\n💡 TIP: Using {LLMConfig.get_client_type()} client")
+        print("ALL TESTS PASSED! S5 LLM extraction is ready to use.")
+        print(f"\nTIP: Using {LLMConfig.get_client_type()} client")
         print("   S5 now includes automatic health checks.")
         print("   Just run: python code/S5_llmExtract.py --test-llm")
     else:
-        print("❌ SOME TESTS FAILED. Check the output above for details.")
+        print("SOME TESTS FAILED. Check the output above for details.")
         print("\nTroubleshooting:")
         print(f"1. Current client type: {LLMConfig.get_client_type()}")
         if LLMConfig.get_client_type() == LLMClientType.OLLAMA:
@@ -377,6 +377,6 @@ if __name__ == "__main__":
     if args.client_type != 'auto':
         import os
         os.environ['S5_LLM_CLIENT_TYPE'] = args.client_type
-        print(f"🔧 Forced client type to: {args.client_type}")
+        print(f"Forced client type to: {args.client_type}")
     
     sys.exit(main())
