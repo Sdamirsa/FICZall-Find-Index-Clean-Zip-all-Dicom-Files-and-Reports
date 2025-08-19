@@ -33,9 +33,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-# Ensure we're using Python 3.6+
-if sys.version_info < (3, 6):
-    print("Error: Python 3.6 or higher is required.")
+# Ensure we're using Python 3.7+
+if sys.version_info < (3, 7):
+    print("Error: Python 3.7 or higher is required.")
     print(f"Current version: {sys.version}")
     sys.exit(1)
 
@@ -86,19 +86,19 @@ def print_header(text: str):
 
 def print_step(text: str):
     """Print a step message."""
-    print(f"{Colors.BLUE}► {text}{Colors.ENDC}")
+    print(f"{Colors.BLUE}[STEP] {text}{Colors.ENDC}")
 
 def print_success(text: str):
     """Print a success message."""
-    print(f"{Colors.GREEN}✓ {text}{Colors.ENDC}")
+    print(f"{Colors.GREEN}[OK] {text}{Colors.ENDC}")
 
 def print_error(text: str):
     """Print an error message."""
-    print(f"{Colors.FAIL}✗ {text}{Colors.ENDC}")
+    print(f"{Colors.FAIL}[ERROR] {text}{Colors.ENDC}")
 
 def print_warning(text: str):
     """Print a warning message."""
-    print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
+    print(f"{Colors.WARNING}[WARNING] {text}{Colors.ENDC}")
 
 def get_python_executable(venv_path: Path = None) -> str:
     """Get the Python executable path."""
@@ -117,10 +117,17 @@ def run_command(cmd: List[str], cwd: str = None, env: Dict = None,
                 timeout: int = None, capture_output: bool = True) -> subprocess.CompletedProcess:
     """Run a command and return the result."""
     try:
+        # Create a clean environment with only string values
+        clean_env = os.environ.copy()
+        if env:
+            # Convert all values to strings to avoid the "environment can only contain strings" error
+            for key, value in env.items():
+                clean_env[key] = str(value)
+        
         result = subprocess.run(
             cmd,
             cwd=cwd,
-            env=env or os.environ.copy(),
+            env=clean_env,
             capture_output=capture_output,
             text=True,
             timeout=timeout
@@ -199,7 +206,7 @@ def install_dependencies(venv_path: Path) -> bool:
                 print_success("All dependencies installed successfully")
                 return True
             else:
-                print_warning("Some dependencies may have failend to install")
+                print_warning("Some dependencies may have failed to install")
                 return True  # Continue anyway, some packages are optional
         else:
             print_warning("requirements.txt not found")
@@ -217,7 +224,7 @@ def get_user_input(prompt: str, default: str = None, required: bool = False) -> 
     """Get input from user with optional default value."""
     if default:
         # Enhanced prompt with emoji and clear instructions
-        print(f"💡 {prompt}")
+        print(f"TIP: {prompt}")
         print(f"   Default: {Colors.GREEN}{default}{Colors.ENDC}")
         user_prompt = f"   Press Enter for default or enter new value: "
     else:
@@ -270,7 +277,7 @@ def configure_pipeline() -> Dict[str, str]:
     print_header("PIPELINE CONFIGURATION")
     
     # Add helpful tip at the beginning
-    print(f"\n{Colors.BLUE}💡 TIP: Most settings have good defaults. Just press Enter to accept them!{Colors.ENDC}")
+    print(f"\n{Colors.BLUE}TIP: Most settings have good defaults. Just press Enter to accept them!{Colors.ENDC}")
     print(f"{Colors.GREEN}   This makes setup quick and easy for most users.{Colors.ENDC}")
     
     config = {}
@@ -380,13 +387,36 @@ def configure_pipeline() -> Dict[str, str]:
             return None
         config['S1_ROOT_DIR'] = root_dir
         
-        # Output directory
-        s1_output_default = run_config.S1_OUTPUT_DIR if run_config else str(BASE_DIR / "data" / "S1_output")
-        output_dir = get_user_input(
-            "Output directory for S1",
-            s1_output_default
-        )
-        config['S1_OUTPUT_DIR'] = output_dir or str(BASE_DIR / "data" / "S1_output")
+        # Auto-generate project name from last two parent folders
+        path_parts = Path(root_dir).parts
+        if len(path_parts) >= 2:
+            # Take last two parts and join with _._
+            project_name = f"{path_parts[-2]}_._{path_parts[-1]}"
+        else:
+            # Fallback to just the last part
+            project_name = path_parts[-1] if path_parts else "project"
+        
+        # Clean the project name (remove special characters that might cause issues, preserve _._)
+        # First replace the _._ temporarily to preserve it
+        project_name = project_name.replace("_._", "|||DELIMITER|||")
+        # Clean other characters
+        project_name = "".join(c if c.isalnum() or c in "_-" else "_" for c in project_name)
+        # Restore the _._ delimiter
+        project_name = project_name.replace("|||DELIMITER|||", "_._")
+        
+        print(f"{Colors.GREEN}   ✓ Auto-generated project name: {project_name}{Colors.ENDC}")
+        print(f"{Colors.GREEN}   ✓ Output will be in: data/processed/{project_name}/{Colors.ENDC}")
+        
+        # Store project name for use by other stages
+        config['desired_name_of_project'] = project_name
+        
+        # Auto-generate all output directories based on project name
+        data_dir = BASE_DIR / "data" / "processed" / project_name
+        config['S1_OUTPUT_DIR'] = str(data_dir / "S1_indexed_metadata")
+        config['S2_OUTPUT_DIR'] = str(data_dir / "S2_concatenated_summaries")
+        config['S3_OUTPUT_DIR'] = str(data_dir / "S3_filtered_studies")
+        config['S4_OUTPUT_DIR'] = str(data_dir / "S4_zip_archives")
+        config['S5_OUTPUT_DIR'] = str(data_dir / "S5_llm_extractions")
     
     # Configure S3 if enabled
     if config.get('RUN_S3_PROCESS') == 'true':
@@ -454,25 +484,28 @@ def configure_pipeline() -> Dict[str, str]:
             print(f"{Colors.WARNING}⚠️  Error loading S5 configuration: {str(e)}{Colors.ENDC}")
             print(f"{Colors.WARNING}   S5 may not work properly. Check S5_llmExtract_config.py{Colors.ENDC}")
         
-        # Input file path (default from S1 output)
-        s1_output = config.get('S1_OUTPUT_DIR', 'data/processed/project/S1_indexed_metadata')
-        default_input = f"{s1_output}/S1_indexingFiles_allDocuments.json"
-        
-        input_file = get_user_input(
-            "Input file path (S1_indexingFiles_allDocuments.json)",
-            run_config.S5_INPUT_FILE if run_config and hasattr(run_config, 'S5_INPUT_FILE') else default_input
-        )
-        config['S5_INPUT_FILE'] = input_file or default_input
-        
-        # Output directory
-        parent_dir = Path(config['S5_INPUT_FILE']).parent.parent
-        default_output = str(parent_dir / "S5_llm_extractions")
-        
-        output_dir = get_user_input(
-            "Output directory",
-            run_config.S5_OUTPUT_DIR if run_config and hasattr(run_config, 'S5_OUTPUT_DIR') else default_output
-        )
-        config['S5_OUTPUT_DIR'] = output_dir or default_output
+        # Auto-configure S5 paths based on project
+        if 'desired_name_of_project' in config:
+            # Use auto-generated paths
+            s1_output = config.get('S1_OUTPUT_DIR', f"data/processed/{config['desired_name_of_project']}/S1_indexed_metadata")
+            config['S5_INPUT_FILE'] = f"{s1_output}/S1_indexingFiles_allDocuments.json"
+            config['S5_OUTPUT_DIR'] = config.get('S5_OUTPUT_DIR', f"data/processed/{config['desired_name_of_project']}/S5_llm_extractions")
+            print(f"{Colors.GREEN}   ✓ S5 input: {config['S5_INPUT_FILE']}{Colors.ENDC}")
+            print(f"{Colors.GREEN}   ✓ S5 output: {config['S5_OUTPUT_DIR']}{Colors.ENDC}")
+        else:
+            # Fallback to prompting if no project name is available
+            s1_output = config.get('S1_OUTPUT_DIR', 'data/processed/project/S1_indexed_metadata')
+            default_input = f"{s1_output}/S1_indexingFiles_allDocuments.json"
+            
+            input_file = get_user_input(
+                "Input file path (S1_indexingFiles_allDocuments.json) - press Enter for auto",
+                default_input
+            )
+            config['S5_INPUT_FILE'] = input_file or default_input
+            
+            parent_dir = Path(config['S5_INPUT_FILE']).parent.parent
+            default_output = str(parent_dir / "S5_llm_extractions")
+            config['S5_OUTPUT_DIR'] = default_output
         
         # Batch size
         batch_size = get_user_input(
@@ -595,9 +628,17 @@ def run_stage(stage: str, config: Dict[str, str], venv_path: Path) -> bool:
             cmd.extend(['--output_dir', config['S1_OUTPUT_DIR']])
     
     elif stage == 'S2':
-        input_dir = config.get('S2_INPUT_DIR', config.get('S1_OUTPUT_DIR', ''))
-        output_json = config.get('S2_OUTPUT_JSON', '')
-        output_excel = config.get('S2_OUTPUT_EXCEL', '')
+        # Use auto-configured paths if available
+        if 'desired_name_of_project' in config:
+            project_name = config['desired_name_of_project']
+            data_dir = BASE_DIR / "data" / "processed" / project_name
+            input_dir = config.get('S2_INPUT_DIR', str(data_dir / "S1_indexed_metadata"))
+            output_json = config.get('S2_OUTPUT_JSON', str(data_dir / "S2_concatenated_summaries" / "S2_patient_summary.json"))
+            output_excel = config.get('S2_OUTPUT_EXCEL', str(data_dir / "S2_concatenated_summaries" / "S2_patient_summary.xlsx"))
+        else:
+            input_dir = config.get('S2_INPUT_DIR', config.get('S1_OUTPUT_DIR', ''))
+            output_json = config.get('S2_OUTPUT_JSON', '')
+            output_excel = config.get('S2_OUTPUT_EXCEL', '')
         
         if input_dir:
             cmd.extend(['--folder_path', input_dir])
@@ -614,14 +655,15 @@ def run_stage(stage: str, config: Dict[str, str], venv_path: Path) -> bool:
             cmd.extend(['--input_dir', input_dir])
         cmd.extend(['--output_dir', output_dir])
         cmd.extend(['--min_files', config.get('S3_MIN_FILES', '10')])
+        cmd.extend(['--overwrite'])  # Auto-overwrite in pipeline mode
     
     elif stage == 'S4':
         input_dir = config.get('S4_INPUT_DIR', config.get('S3_OUTPUT_DIR', ''))
         output_dir = config.get('S4_OUTPUT_DIR', str(BASE_DIR / "data" / "S4_zipStore"))
         if input_dir:
-            cmd.extend(['--input-dir', input_dir])
-        cmd.extend(['--output-dir', output_dir])
-        cmd.extend(['--workers', config.get('S4_WORKERS', '2')])
+            cmd.extend(['--input', input_dir])
+        cmd.extend(['--output', output_dir])
+        cmd.extend(['--concurrency', config.get('S4_WORKERS', '2')])
     
     elif stage == 'S5':
         input_file = config.get('S5_INPUT_FILE', '')
@@ -732,7 +774,7 @@ def main():
                        help='Setup virtual environment and install dependencies only')
     parser.add_argument('--skip-setup', action='store_true',
                        help='Skip setup and run pipeline directly')
-    parser.add_argument('--stage', choices=['S0', 'S1', 'S2', 'S3', 'S4'],
+    parser.add_argument('--stage', choices=['S0_ZIP', 'S0_ISO', 'S1', 'S2', 'S3', 'S4', 'S5'],
                        help='Run specific stage only')
     parser.add_argument('--non-interactive', action='store_true',
                        help='Run with current configuration without prompts')
@@ -748,10 +790,10 @@ def main():
         return 0
     
     print_header("DICOM PROCESSING PIPELINE")
-    print(f"📁 Repository: {BASE_DIR}")
-    print(f"🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"\n{Colors.BLUE}🚀 Welcome! This tool will guide you through DICOM processing.{Colors.ENDC}")
-    print(f"{Colors.GREEN}💡 Quick tip: Most settings have smart defaults - just press Enter!{Colors.ENDC}")
+    print(f"Repository: {BASE_DIR}")
+    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n{Colors.BLUE}Welcome! This tool will guide you through DICOM processing.{Colors.ENDC}")
+    print(f"{Colors.GREEN}Quick tip: Most settings have smart defaults - just press Enter!{Colors.ENDC}")
     
     # Check Python version
     if not check_python_version():

@@ -1,0 +1,21 @@
+{
+  "locations": [
+    "e:/Data/Big Pancreas (CT, EUS)/Raw Data Hospital/Emam Kh",
+    "e:/Data/Big Pancreas (CT, EUS)/Raw Data Hospital 2024/EmamKhomeini",
+    "e:/Data/Big Pancreas (CT, EUS)/Raw Data Hospital/Taleghani",
+    "e:/Data/Big Pancreas (CT, EUS)/Raw Data Hospital 2024/Taleghani"
+  ],
+  "RUN_S0_ZIP_EXTRACT": "true",
+  "RUN_S0_ISO_EXTRACT": "false",
+  "RUN_S1_INDEXING": "true",
+  "RUN_S2_CONCAT": "true",
+  "RUN_S3_PROCESS": "true",
+  "RUN_S4_ZIP": "false",
+  "RUN_S5_LLM_EXTRACT": "false",
+  "MAX_WORKERS": "10",
+  "S3_MIN_FILES": "10",
+  "NAMING_STRATEGY": "auto",
+  "batch_processing": true,
+  "created_at": "2025-08-19-T17:00:00",
+  "total_locations": 4
+}

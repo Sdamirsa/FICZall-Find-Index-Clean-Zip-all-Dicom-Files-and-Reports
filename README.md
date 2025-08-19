@@ -2,285 +2,609 @@
 
 **Find, Index, Clean, Zip all DICOM Files and Reports**
 
-A comprehensive, automated pipeline for processing DICOM medical imaging data, from extraction through archival.
+A comprehensive, automated pipeline for processing DICOM medical imaging data, from extraction through archival, with AI-powered document analysis and batch processing capabilities.
 
-## 🚀 Quick Start
+---
+
+## 🎯 What Problem Does FICZall Solve?
+
+### For Medical Professionals & Researchers
+
+Medical imaging generates **massive amounts of unorganized data**. FICZall transforms this chaos into structured, searchable, and archival-ready information:
+
+#### **Common Medical Data Challenges:**
+- 🗂️ **Scattered DICOM files** across thousands of folders with cryptic names
+- 📁 **ZIP/ISO archives** containing medical data that need bulk extraction  
+- 🔍 **No searchable index** - finding specific patients or studies is time-consuming
+- 📊 **Missing metadata** - difficult to generate reports or statistics
+- 💾 **Storage inefficiency** - duplicate studies and poor compression
+- 📄 **Unstructured reports** - medical documents with valuable data locked in text format
+- 🏥 **Multiple locations** - different hospitals/projects need the same processing
+
+#### **What FICZall Provides:**
+- ✅ **Automated DICOM indexing** with comprehensive metadata extraction
+- ✅ **Bulk ZIP/ISO extraction** with smart resume capability and integrity checking
+- ✅ **Patient summaries** in Excel and JSON format for easy analysis
+- ✅ **Study filtering** to remove duplicates and incomplete studies
+- ✅ **Compressed archives** optimized for long-term storage
+- ✅ **AI-powered extraction** of structured medical data from reports (HIPAA-compliant local processing available)
+- ✅ **Batch processing** for multiple hospitals/projects with one configuration
+- ✅ **User-friendly GUI** for non-technical users
+- ✅ **Zero-dependency startup** - only requires Python 3.7+
+
+#### **Typical Use Cases:**
+- **Hospitals**: Organize imaging archives, create patient databases, prepare data for research
+- **Research Institutions**: Process multi-site studies, extract standardized datasets
+- **Medical AI Companies**: Prepare training datasets with structured metadata
+- **Radiology Departments**: Archive studies efficiently, generate summary reports
+- **PACS Administrators**: Migrate data between systems, create searchable indexes
+
+---
+
+## 🚀 Quick Setup Guide
 
 ### Prerequisites
-- **Python 3.6+** (that's it!)
-- No additional packages needed - the script handles everything
+- **Python 3.7+** (Download from [python.org](https://python.org))
+- **Operating System**: Windows, macOS, or Linux
+- **Disk Space**: 2-5 GB for dependencies + space for your medical data
+- **Memory**: 4GB RAM minimum (8GB+ recommended for large datasets)
 
-### Installation & Usage
+### Installation Steps
 
-1. **Install Python** (if not already installed):
-   - Download from [python.org](https://www.python.org/downloads/)
-   - ✅ Make sure to check "Add Python to PATH" during installation
+#### 1. Clone the Repository
+```bash
+# Option A: Using Git
+git clone https://github.com/your-username/FICZall-Find-Index-Clean-Zip-all-Dicom-Files-and-Reports.git
+cd FICZall-Find-Index-Clean-Zip-all-Dicom-Files-and-Reports
 
-2. **Download/Clone this repository**:
-   ```bash
-   git clone <repository-url>
-   cd FICZall-Find-Index-Clean-Zip-all-Dicom-Files-and-Reports
-   ```
+# Option B: Download ZIP
+# Go to GitHub → Click "Code" → "Download ZIP" → Extract
+# Then navigate to the extracted folder
+```
 
-3. **Run the pipeline**:
-   
-   **Single project (interactive):**
-   ```bash
-   python run.py
-   ```
-   
-   **Multiple projects (batch mode - NEW!):**
-   ```bash
-   python runs.py
-   ```
+#### 2. Initial Setup (One-time)
+```bash
+# This creates virtual environment and installs all dependencies
+python run.py --setup
+```
 
-**That's it!** The script will:
-- ✅ Create a virtual environment automatically
-- ✅ Install all required dependencies
-- ✅ Guide you through configuration
-- ✅ Run the pipeline stages you select
+**That's it!** The script handles everything automatically:
+- ✅ Creates isolated virtual environment
+- ✅ Installs all medical processing libraries
+- ✅ Verifies everything works properly
+- ✅ Takes 2-5 minutes depending on internet speed
+
+---
 
 ## 📋 Pipeline Overview
 
-The pipeline consists of 7 stages:
+FICZall consists of **7 stages** that can be run individually or together:
 
-| Stage | Name | Description | Required |
-|-------|------|-------------|----------|
-| **S0_ZIP** | ZIP Extraction | Extract ZIP files in directory tree with smart logic | Optional |
-| **S0_ISO** | ISO Extraction | Extract DICOM files from ISO archives | Optional |
-| **S1** | DICOM Indexing | Scan directories and extract DICOM metadata | ✅ Required |
-| **S2** | Concatenate Index | Aggregate patient information into summaries | ✅ Required |
-| **S3** | Process for Storage | Filter studies and remove duplicates | ✅ Required |
-| **S4** | Create ZIP Archives | Compress DICOM studies for long-term storage | Optional |
-| **S5** | LLM Extract | Extract structured medical data from documents using AI | Optional |
+| Stage | Name | Purpose | Required | Time* |
+|-------|------|---------|----------|--------|
+| **S0_ZIP** | ZIP Extraction | Extract ZIP files with smart logic | Optional | 5-30 min |
+| **S0_ISO** | ISO Extraction | Extract DICOM from ISO archives | Optional | 10-60 min |
+| **S1** | DICOM Indexing | Scan & extract metadata | **✅ Required** | 10-120 min |
+| **S2** | Summary Creation | Aggregate patient data | **✅ Required** | 1-10 min |
+| **S3** | Study Filtering | Remove duplicates & filter | **✅ Required** | 1-15 min |
+| **S4** | ZIP Archiving | Compress for storage | Optional | 15-180 min |
+| **S5** | 🤖 AI Extraction | Extract medical data with AI | Optional | 5-60 min |
 
-## 🎯 Use Cases
+*Processing times for ~10,000 files on modern hardware
 
-### Scenario 1: DICOM Files in Folders
-**Most common use case**
-```bash
-python run.py
-# Select: S1, S2, S3, S4 (skip S0)
-# Provide root directory containing DICOM files
-# Follow the interactive prompts
-```
+---
 
-### Scenario 2: DICOM Files in ZIP Archives
-**For compressed medical data**
-```bash
-python run.py
-# Select: S0_ZIP, S1, S2, S3 (ZIP extraction + core stages)
-# Provide directory containing ZIP files
-# Follow the interactive prompts
-```
+## 💻 Three Ways to Use FICZall
 
-### Scenario 3: DICOM Files in ISO Archives
-**For archived medical data**
-```bash
-python run.py
-# Select: S0_ISO, S1, S2, S3, S4 (all stages except ZIP)
-# Provide directory containing ISO files
-# Provide PowerISO path (Windows)
-# Follow the interactive prompts
-```
+Choose the method that best fits your technical comfort level:
 
-### Scenario 4: Re-process Existing Data
-**Process already indexed files**
-```bash
-python run.py --stage S3  # Filter and process
-# or
-python run.py --stage S4  # Create archives only
-```
+### 🖱️ Option 1: Graphical User Interface (Recommended for Non-Technical Users)
+**Simple point-and-click interface with real-time progress monitoring**
 
-### Scenario 5: Extract ZIP Files Only
-**Extract all ZIP files in directory tree**
-```bash
-python code/S0_zipExtract.py --root-dir /path/to/zips --workers 8
-```
+**Universal Launch Method (Works on All Systems):**
 
-### Scenario 6: AI-Powered Document Processing (NEW!)
-**🤖 Extract structured medical data from reports using AI - PRIVACY SAFE options available!**
+1. **Download and extract FICZall** (as shown above)
 
-#### Option A: Use Local AI (Recommended for Medical Data - HIPAA Compliant)
-```bash
-# 1. Install Ollama (local AI - keeps data on your computer)
-# Download from: https://ollama.ai/
-# Follow installation instructions for your operating system
+2. **Launch the GUI:**
+   
+   **Windows (Command Prompt or PowerShell):**
+   ```cmd
+   python launch_gui.py
+   ```
+   
+   **macOS/Linux (Terminal):**
+   ```bash
+   python3 launch_gui.py
+   ```
 
-# 2. Download a medical AI model (do this once)
-ollama pull llama3-groq-tool-use:8b-q8_0
+3. **Using the GUI:**
+   - **Single Location Tab**: Process one DICOM folder
+   - **Multi-Location Tab**: Process multiple folders with same settings
+   - **Browse buttons**: Click to select your DICOM folders
+   - **Memory system**: Remembers your last 3 inputs for each field
+   - **Real-time logs**: Watch processing progress live
+   - **Stop/Resume**: Control processing as needed
+   - **Helpful hints**: Tooltips guide you through settings
 
-# 3. Start Ollama service
-ollama serve
+4. **Basic workflow:**
+   - Select your DICOM data folder using "Browse"
+   - Choose which pipeline stages to run (S1-S3 minimum required)
+   - Adjust settings with helpful hints (min files: 5-20, max workers: 2-8)
+   - Click "Start Processing"
+   - Monitor progress in the log window
+   - Find results in `data/processed/[project_name]/`
 
-# 4. Configure for local processing (data never leaves your computer)
-export S5_LLM_CLIENT_TYPE=ollama
+**Note:** The GUI launcher automatically checks for Python, tkinter, and all required files before starting.
 
-# 5. Run AI extraction
-python run.py --stage S5
-```
+---
 
-#### Option B: Use OpenAI (Requires API Key - Data sent to OpenAI)
-```bash
-# 1. Get API key from https://platform.openai.com/api-keys
-export OPENAI_API_KEY=your_api_key_here
+### 🔧 Option 2: Single Location Processing (run.py)
+**Command-line interface for processing one DICOM dataset at a time**
 
-# 2. Configure for OpenAI
-export S5_LLM_CLIENT_TYPE=openai
+<details>
+<summary><strong>🖥️ Windows Setup</strong></summary>
 
-# 3. Run AI extraction
-python run.py --stage S5
-```
+1. **Open Command Prompt or PowerShell** in the FICZall folder
 
-#### 🔒 Privacy Information:
-- **Local AI (Ollama)**: ✅ Patient data stays on your computer - HIPAA friendly
-- **OpenAI**: ⚠️ Patient data sent to OpenAI servers - ensure compliance agreements
+2. **Interactive mode (recommended for first-time users):**
+   ```cmd
+   python run.py
+   ```
+   The script will ask you:
+   - Where your DICOM files are located
+   - Which stages to run
+   - Project name (optional)
+   - Processing settings
 
-### Scenario 7: Batch Processing Multiple Locations (NEW!)
-**🏥 Process multiple hospitals, studies, or projects with the same settings**
-```bash
-# Interactive multi-location setup
-python runs.py
+3. **Common workflows:**
 
-# The script will ask for:
-# 1. Multiple data locations (hospitals, studies, projects)
-# 2. Single configuration for all locations
-# 3. Processing settings that apply to all
+   **Basic DICOM processing:**
+   ```cmd
+   python run.py
+   # Choose: S1, S2, S3 (required stages)
+   # Enter path like: C:\Medical_Data\CT_Scans
+   ```
 
-# Example locations:
-# - C:/Hospital_A/CT_Studies_2024
-# - C:/Hospital_B/MRI_Studies_2024  
-# - C:/Research_Project_1/Data
-# - C:/Research_Project_2/Data
+   **Process ZIP files first:**
+   ```cmd
+   python run.py  
+   # Choose: S0_ZIP, S1, S2, S3
+   # Enter path to folder containing ZIP files
+   ```
 
-# Resume interrupted batch processing
-python runs.py --resume
+   **Add AI analysis:**
+   ```cmd
+   python run.py
+   # Choose: S1, S2, S3, S5
+   # Make sure to setup AI first (see AI section below)
+   ```
 
-# Use existing batch configuration
-python runs.py --non-interactive
-```
+4. **Non-interactive mode (after first setup):**
+   ```cmd
+   python run.py --non-interactive
+   ```
 
-#### ✨ Batch Processing Features:
-- **Shared Configuration**: Set up once, apply to all locations
-- **Progress Tracking**: Resume from interruption points
-- **Individual Projects**: Each location gets its own project folder
-- **Error Recovery**: Continue processing even if one location fails
-- **Flexible Naming**: Auto-generate or custom project names
+5. **Other useful commands:**
+   ```cmd
+   python run.py --config          # Show current configuration
+   python run.py --stage S1        # Run only specific stage
+   python run.py --setup           # Setup virtual environment only
+   ```
 
-## 🛠️ Command Options
+</details>
 
-### Single Location Processing
-```bash
-# Interactive mode (recommended for first-time users)
-python run.py
+<details>
+<summary><strong>🍎 macOS Setup</strong></summary>
 
-# Show current configuration
-python run.py --config
+1. **Open Terminal** and navigate to FICZall folder:
+   ```bash
+   cd /path/to/FICZall-Find-Index-Clean-Zip-all-Dicom-Files-and-Reports
+   ```
 
-# Setup only (create virtual environment and install dependencies)
-python run.py --setup
+2. **Interactive mode (recommended for first-time users):**
+   ```bash
+   python3 run.py
+   ```
+   The script will ask you:
+   - Where your DICOM files are located
+   - Which stages to run
+   - Project name (optional)
+   - Processing settings
 
-# Run a specific stage only
-python run.py --stage S1  # Options: S0_ZIP, S0_ISO, S1, S2, S3, S4, S5
+3. **Common workflows:**
 
-# Run without prompts (use existing configuration)
-python run.py --non-interactive
-```
+   **Basic DICOM processing:**
+   ```bash
+   python3 run.py
+   # Choose: S1, S2, S3 (required stages)
+   # Enter path like: /Users/yourname/Medical_Data/CT_Scans
+   ```
 
-### Multi-Location Batch Processing
-```bash
-# Interactive batch setup (recommended)
-python runs.py
+   **Process ZIP files first:**
+   ```bash
+   python3 run.py
+   # Choose: S0_ZIP, S1, S2, S3  
+   # Enter path to folder containing ZIP files
+   ```
 
-# Show batch configuration
-python runs.py --config
+   **Add AI analysis:**
+   ```bash
+   python3 run.py
+   # Choose: S1, S2, S3, S5
+   # Make sure to setup AI first (see AI section below)
+   ```
 
-# Setup environment for batch processing
-python runs.py --setup
+4. **Non-interactive mode (after first setup):**
+   ```bash
+   python3 run.py --non-interactive
+   ```
 
-# Resume interrupted batch processing
-python runs.py --resume
+5. **Other useful commands:**
+   ```bash
+   python3 run.py --config          # Show current configuration
+   python3 run.py --stage S1        # Run only specific stage  
+   python3 run.py --setup           # Setup virtual environment only
+   ```
 
-# Run batch with existing configuration
-python runs.py --non-interactive
-```
+</details>
+
+---
+
+### 🏥 Option 3: Multi-Location Batch Processing (runMulti.py)
+**Process multiple hospitals, studies, or projects with the same configuration**
+
+<details>
+<summary><strong>🖥️ Windows Setup</strong></summary>
+
+1. **Open Command Prompt or PowerShell** in the FICZall folder
+
+2. **Interactive batch setup (recommended):**
+   ```cmd
+   python runMulti.py
+   ```
+   The script will ask you:
+   - Multiple data locations (hospitals, studies, projects)
+   - Single configuration that applies to ALL locations
+   - Processing stages for all locations
+
+3. **Example workflow:**
+   ```cmd
+   python runMulti.py
+   
+   # When prompted, enter locations like:
+   # Location 1: C:\Hospital_A\CT_Studies_2024
+   # Location 2: C:\Hospital_B\MRI_Studies_2024
+   # Location 3: C:\Research_Project_Data
+   # 
+   # Then choose stages: S1, S2, S3 (or add S4, S5 as needed)
+   # 
+   # FICZall will process each location completely before moving to the next:
+   # Hospital_A → ALL stages complete → Individual project folder
+   # Hospital_B → ALL stages complete → Individual project folder  
+   # Research_Project → ALL stages complete → Individual project folder
+   ```
+
+4. **Resume interrupted processing:**
+   ```cmd
+   python runMulti.py --resume
+   ```
+
+5. **Use existing batch configuration:**
+   ```cmd
+   python runMulti.py --non-interactive
+   ```
+
+6. **Other useful commands:**
+   ```cmd
+   python runMulti.py --config      # Show batch configuration and progress
+   python runMulti.py --setup       # Setup virtual environment for batch processing
+   ```
+
+**Batch Processing Benefits:**
+- **Sequential processing**: Each location completes fully before next starts (no conflicts)
+- **One-time setup**: Configure once, process many locations
+- **Individual projects**: Each location gets its own organized output folder
+- **Progress tracking**: Resume from any interruption point
+- **Error recovery**: Continue processing even if one location fails
+
+</details>
+
+<details>
+<summary><strong>🍎 macOS Setup</strong></summary>
+
+1. **Open Terminal** and navigate to FICZall folder:
+   ```bash
+   cd /path/to/FICZall-Find-Index-Clean-Zip-all-Dicom-Files-and-Reports
+   ```
+
+2. **Interactive batch setup (recommended):**
+   ```bash
+   python3 runMulti.py
+   ```
+   The script will ask you:
+   - Multiple data locations (hospitals, studies, projects)
+   - Single configuration that applies to ALL locations
+   - Processing stages for all locations
+
+3. **Example workflow:**
+   ```bash
+   python3 runMulti.py
+   
+   # When prompted, enter locations like:
+   # Location 1: /Users/yourname/Hospital_A/CT_Studies_2024
+   # Location 2: /Users/yourname/Hospital_B/MRI_Studies_2024
+   # Location 3: /Users/yourname/Research_Project_Data
+   #
+   # Then choose stages: S1, S2, S3 (or add S4, S5 as needed)
+   #
+   # FICZall will process each location completely before moving to the next:
+   # Hospital_A → ALL stages complete → Individual project folder
+   # Hospital_B → ALL stages complete → Individual project folder
+   # Research_Project → ALL stages complete → Individual project folder
+   ```
+
+4. **Resume interrupted processing:**
+   ```bash
+   python3 runMulti.py --resume
+   ```
+
+5. **Use existing batch configuration:**
+   ```bash
+   python3 runMulti.py --non-interactive
+   ```
+
+6. **Other useful commands:**
+   ```bash
+   python3 runMulti.py --config      # Show batch configuration and progress
+   python3 runMulti.py --setup       # Setup virtual environment for batch processing
+   ```
+
+**Batch Processing Benefits:**
+- **Sequential processing**: Each location completes fully before next starts (no conflicts)
+- **One-time setup**: Configure once, process many locations
+- **Individual projects**: Each location gets its own organized output folder
+- **Progress tracking**: Resume from any interruption point
+- **Error recovery**: Continue processing even if one location fails
+
+</details>
+
+---
+
+## 🤖 AI-Powered Medical Document Extraction (S5)
+
+### What Does AI Extraction Do?
+
+The AI stage (S5) processes medical documents and extracts structured information:
+
+- **Patient Information**: Names, ages, IDs, demographics
+- **Study Details**: Imaging modality (CT, MRI, etc.), body parts examined
+- **Medical Findings**: Key findings from radiology reports
+- **Diagnoses**: Current and previous medical conditions
+- **Treatments**: Previous interventions, surgeries, medications
+- **Clinical Context**: Reasons for imaging, medical history
+
+### Privacy & Security Options
+
+#### 🔒 Local AI (Ollama) - HIPAA Compliant
+- ✅ **Patient data stays on your computer**
+- ✅ **No internet required for processing**
+- ✅ **HIPAA compliant when properly configured**
+- ✅ **Free to use (no API costs)**
+- ❓ **Requires ~8GB disk space for AI model**
+- ❓ **Slower than cloud APIs**
+
+#### ☁️ Cloud AI (OpenAI) - Faster but Data Leaves
+- ✅ **Very fast processing**
+- ✅ **High accuracy**
+- ✅ **No local storage requirements**
+- ⚠️ **Patient data sent to OpenAI servers**
+- ⚠️ **Requires API key (costs money)**
+- ⚠️ **Need data processing agreements for HIPAA**
+
+### Setting Up Local AI (Recommended for Medical Data)
+
+<details>
+<summary><strong>🖥️ Windows Setup</strong></summary>
+
+1. **Install Ollama** (one-time setup):
+   - Go to [ollama.ai](https://ollama.ai/)
+   - Download "Ollama for Windows"
+   - Run the installer
+
+2. **Download AI Model** (one-time, ~4GB download):
+   ```cmd
+   ollama pull llama3-groq-tool-use:8b-q8_0
+   ```
+
+3. **Start Ollama Service** (keep running when using S5):
+   ```cmd
+   ollama serve
+   ```
+
+4. **Configure FICZall for Local AI:**
+   ```cmd
+   set S5_LLM_CLIENT_TYPE=ollama
+   ```
+
+5. **Test AI Setup:**
+   ```cmd
+   python code/S5_llmExtract_test.py --client-type ollama
+   ```
+
+6. **Use AI in Pipeline:**
+   ```cmd
+   python run.py --stage S5
+   # OR include S5 when running full pipeline
+   python run.py
+   # Choose stages: S1, S2, S3, S5
+   ```
+
+</details>
+
+<details>
+<summary><strong>🍎 macOS Setup</strong></summary>
+
+1. **Install Ollama** (one-time setup):
+   - Go to [ollama.ai](https://ollama.ai/)
+   - Download "Ollama for macOS"
+   - Open the downloaded file and follow installation instructions
+
+2. **Download AI Model** (one-time, ~4GB download):
+   ```bash
+   ollama pull llama3-groq-tool-use:8b-q8_0
+   ```
+
+3. **Start Ollama Service** (keep running when using S5):
+   ```bash
+   ollama serve
+   ```
+
+4. **Configure FICZall for Local AI:**
+   ```bash
+   export S5_LLM_CLIENT_TYPE=ollama
+   ```
+
+5. **Test AI Setup:**
+   ```bash
+   python3 code/S5_llmExtract_test.py --client-type ollama
+   ```
+
+6. **Use AI in Pipeline:**
+   ```bash
+   python3 run.py --stage S5
+   # OR include S5 when running full pipeline
+   python3 run.py
+   # Choose stages: S1, S2, S3, S5
+   ```
+
+</details>
+
+### Setting Up Cloud AI (OpenAI)
+
+<details>
+<summary><strong>🖥️ Windows Setup</strong></summary>
+
+1. **Get OpenAI API Key:**
+   - Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - Create account and generate API key
+
+2. **Set Environment Variable:**
+   ```cmd
+   set OPENAI_API_KEY=your_api_key_here
+   set S5_LLM_CLIENT_TYPE=openai
+   ```
+
+3. **Use AI in Pipeline:**
+   ```cmd
+   python run.py --stage S5
+   ```
+
+</details>
+
+<details>
+<summary><strong>🍎 macOS Setup</strong></summary>
+
+1. **Get OpenAI API Key:**
+   - Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - Create account and generate API key
+
+2. **Set Environment Variable:**
+   ```bash
+   export OPENAI_API_KEY=your_api_key_here
+   export S5_LLM_CLIENT_TYPE=openai
+   ```
+
+3. **Use AI in Pipeline:**
+   ```bash
+   python3 run.py --stage S5
+   ```
+
+</details>
+
+---
 
 ## 📁 Output Structure
 
-After running, your directory will look like:
+After processing, your data will be organized as follows:
 
+### Single Location Processing (run.py)
 ```
-FICZall-Find-Index-Clean-Zip-all-Dicom-Files-and-Reports/
-├── run.py                          # 🎯 Single location processing
-├── runs.py                         # 🏥 Multi-location batch processing (NEW!)
-├── run_config.py                   # ⚙️ Configuration (created after first run)
-├── batch_processing_config.json    # 📋 Batch configuration (created by runs.py)
-├── batch_processing_progress.json  # 📊 Batch progress tracking (created by runs.py)
-├── S5_llmExtract_config.py         # 🤖 AI extraction configuration
-├── venv/                          # 📦 Virtual environment (auto-created)
-├── data/
-│   ├── processed/
-│   │   ├── project_name/                 # 📁 Single location results (run.py)
-│   │   │   ├── S1_indexed_metadata/      # 📋 Indexed DICOM metadata
-│   │   │   ├── S2_concatenated_summaries/ # 📊 Patient summaries
-│   │   │   ├── S3_filtered_studies/      # 🔄 Filtered studies
-│   │   │   ├── S4_zip_archives/          # 📦 ZIP archives (if enabled)
-│   │   │   └── S5_llm_extractions/       # 🤖 AI extractions (if enabled)
-│   │   ├── hospital_a_ct_2024/           # 🏥 Batch location 1 (runs.py)
-│   │   │   ├── S1_indexed_metadata/
-│   │   │   ├── S2_concatenated_summaries/
-│   │   │   ├── S3_filtered_studies/
-│   │   │   ├── S4_zip_archives/
-│   │   │   └── S5_llm_extractions/
-│   │   ├── hospital_b_mri_2024/          # 🏥 Batch location 2 (runs.py)
-│   │   │   ├── S1_indexed_metadata/
-│   │   │   ├── S2_concatenated_summaries/
-│   │   │   ├── S3_filtered_studies/
-│   │   │   ├── S4_zip_archives/
-│   │   │   └── S5_llm_extractions/
-│   │   └── research_project_001/         # 🧪 Batch location 3 (runs.py)
-│   │       ├── S1_indexed_metadata/
-│   │       ├── S2_concatenated_summaries/
-│   │       ├── S3_filtered_studies/
-│   │       ├── S4_zip_archives/
-│   │       └── S5_llm_extractions/
-├── code/                          # 🔧 Pipeline scripts (don't run directly)
-└── requirements.txt               # 📋 Python dependencies
+data/processed/your_project_name/
+├── S1_indexed_metadata/           # 📋 DICOM metadata index
+│   ├── Patient_001_Study.jsonl   # Individual patient data
+│   ├── Patient_002_Study.jsonl
+│   └── S1_indexingFiles_allDocuments.json
+├── S2_concatenated_summaries/     # 📊 Patient summaries
+│   ├── S2_patient_summary.json   # Machine-readable
+│   └── S2_patient_summary.xlsx   # Human-readable Excel
+├── S3_filtered_studies/           # 🔄 Filtered studies
+│   └── S3_filtered_studies.json
+├── S4_zip_archives/               # 💾 Compressed archives (optional)
+│   └── Patient_Studies.zip
+└── S5_llm_extractions/           # 🤖 AI-extracted data (optional)
+    ├── S5_extracted_data.json
+    └── S5_processing_results.json
 ```
+
+### Multi-Location Batch Processing (runMulti.py)
+```
+data/processed/
+├── hospital_a_ct_2024/           # 🏥 Location 1 results
+│   ├── S1_indexed_metadata/
+│   ├── S2_concatenated_summaries/
+│   ├── S3_filtered_studies/
+│   ├── S4_zip_archives/
+│   └── S5_llm_extractions/
+├── hospital_b_mri_2024/          # 🏥 Location 2 results
+│   ├── S1_indexed_metadata/
+│   ├── S2_concatenated_summaries/
+│   ├── S3_filtered_studies/
+│   ├── S4_zip_archives/
+│   └── S5_llm_extractions/
+└── research_project_001/         # 🧪 Location 3 results
+    ├── S1_indexed_metadata/
+    ├── S2_concatenated_summaries/
+    ├── S3_filtered_studies/
+    ├── S4_zip_archives/
+    └── S5_llm_extractions/
+```
+
+---
 
 ## ⚙️ Configuration
 
-### First Run Configuration
-On first run, the script will interactively ask for:
+### Essential Settings
 
-1. **Which stages to run**
-   - S0_ZIP: Only needed if you have ZIP files to extract
-   - S0_ISO: Only needed if you have ISO files
-   - S1-S3: Required for complete processing
-   - S4: Optional for ZIP archives
-   - S5: Optional for AI document extraction
-
-2. **Input/Output directories**
-   - Where your DICOM files are located
-   - Where to save processed results
-
-3. **Processing parameters**
-   - Compression level for ZIP files
-   - Minimum files per study
-   - Number of parallel workers
-
-### Persistent Configuration
-Settings are saved in `run_config.py` and can be edited directly:
+The most important configuration is in `run_config.py`:
 
 ```python
-# Example configuration
-S1_ROOT_DIR = '/path/to/dicom/files'
-ZIP_COMPRESSION_LEVEL = '6'  # 0-9, where 9 is maximum compression
-S3_MIN_FILES = '10'          # Minimum files required per study
-MAX_WORKERS = '4'            # Number of parallel workers
+# STEP 1: Point to your DICOM data (CHANGE THIS!)
+Location_of_your_data = r"C:\Your\Path\To\DICOM\Files"
+
+# STEP 2: Project name (optional - auto-generated if empty)
+desired_name_of_project = "MyHospital_CT_Study_2024"
+```
+
+### Performance Tuning
+
+For different dataset sizes:
+
+**Small Dataset (< 1,000 files):**
+```python
+MAX_WORKERS = '2'
+S3_MIN_FILES = '5'
+ZIP_COMPRESSION_LEVEL = '6'
+```
+
+**Large Dataset (> 10,000 files):**
+```python
+MAX_WORKERS = '8'
+S3_MIN_FILES = '20'
+ZIP_COMPRESSION_LEVEL = '1'  # Faster compression
 ```
 
 ### Environment Variables
+
 Advanced users can override any setting:
 
 ```bash
@@ -291,158 +615,115 @@ export S3_MIN_FILES=20
 export MAX_WORKERS=8
 ```
 
-## 🔧 Advanced Features
-
-### Resume Capability
-- Pipeline stages can be interrupted and resumed
-- Progress is automatically saved
-- No data loss on unexpected shutdown
-
-### Parallel Processing
-- Automatic CPU detection for optimal performance
-- Configurable worker pools
-- Memory-efficient streaming for large datasets
-
-### Error Handling
-- Graceful degradation for missing dependencies
-- Automatic retries for transient failures
-- Comprehensive logging for troubleshooting
-
-### Flexible Input Formats
-- DICOM files (.dcm or no extension)
-- ISO archives containing DICOM data
-- Mixed directory structures
-
-## 🩺 DICOM Data Processing
-
-### Metadata Extraction
-The pipeline extracts comprehensive DICOM metadata including:
-- Patient information (name, ID, age)
-- Study details (date, modality, body part)
-- Series information (description, protocol)
-- Technical parameters (slice thickness, orientation)
-- Institution and equipment details
-
-### Quality Control
-- Duplicate detection and removal
-- Study validation (minimum file requirements)
-- Corrupted file detection
-- Missing metadata handling
-
-### Output Formats
-- **JSONL**: One JSON object per DICOM file for detailed analysis
-- **JSON**: Aggregated patient summaries
-- **Excel**: Human-readable reports with statistics
-- **ZIP**: Compressed archives with embedded metadata
+---
 
 ## 🛠️ External Dependencies
 
-### Required for S0_ZIP (ZIP Extraction)
-- **No additional tools required** - uses Python's built-in zipfile module
-- **Multi-threaded extraction** with integrity checking
-- **Smart resume logic** avoids re-extraction
+### For S0_ISO (ISO Extraction) - Windows Only
+- **PowerISO**: Download from [poweriso.com](https://www.poweriso.com/)
+- Configure path in `run_config.py`
+- Optional - skip S0 if DICOM files are already extracted
 
-### Required for S0_ISO (ISO Extraction)
-- **PowerISO** (Windows only): Download from [poweriso.com](https://www.poweriso.com/)
-  - Used to extract DICOM files from ISO archives
-  - Configure path in `run_config.py`
-  - Optional - skip S0 if DICOM files are already extracted
+### For S5 (AI Processing) - Optional
+- **Local AI**: Ollama software (free, privacy-safe)
+- **Cloud AI**: OpenAI API key (paid, data sent to OpenAI)
 
 ### Python Packages (Auto-installed)
+All required packages are installed automatically:
 - **pydicom**: DICOM file reading and metadata extraction
 - **pandas**: Data manipulation and Excel output
-- **openpyxl**: Excel file support
-- **python-docx**: Document processing (for reports)
-- **PyPDF2**: PDF processing (for reports)
+- **numpy**: Array operations for performance
 - **tqdm**: Progress bars
-- **numpy**: Array operations (improves performance)
-- **Pillow**: Image processing support
-- **openai**: AI-powered document extraction (S5 stage)
-- **pydantic**: Data validation for structured outputs
+- **openai**: AI-powered document extraction
+- **pydantic**: Data validation for AI outputs
+
+---
 
 ## 🚨 Troubleshooting
 
 ### Common Issues
 
-#### "Python not found"
-```bash
-# Make sure Python is installed and added to PATH
-# Try alternative command:
-python3 run.py
-```
+**"Python not found"**
+- **Windows**: Reinstall Python, check "Add to PATH" during installation
+- **macOS**: Install Python 3.7+ from python.org or use `brew install python3`
 
-#### "PowerISO not found" (S0 stage only)
-- S0 is optional - you can skip it if DICOM files are already extracted
-- Download PowerISO from [poweriso.com](https://www.poweriso.com/)
-- Update path in `run_config.py` or when prompted
+**"Permission denied"**
+- **Windows**: Run Command Prompt as Administrator
+- **macOS**: Use `sudo` before the python command
 
-#### "Permission denied"
-```bash
-# Linux/Mac: Make script executable
-chmod +x run.py
-./run.py
+**"DICOM files not found"**
+- Check your path uses forward slashes: `C:/Medical/Data/DICOM`
+- Verify the directory exists and contains DICOM files
 
-# Windows: Run as administrator if needed
-```
+**"Out of memory"**
+- Reduce worker count in `run_config.py`: `MAX_WORKERS = '2'`
 
-#### Dependencies installation fails
-- The script will continue with available packages
-- Some packages are optional (e.g., Excel output needs pandas)
-- Manual installation: `venv/bin/pip install <package>`
+**"Ollama not found" (for AI features)**
+- Install Ollama from [ollama.ai](https://ollama.ai/)
+- Start the service: `ollama serve`
+- Test with: `python code/S5_llmExtract_test.py --client-type ollama`
 
 ### Getting Help
 
-1. **Check log files** in each output directory for detailed error information
-2. **Run setup again**: `python run.py --setup`
-3. **Verify configuration**: `python run.py --config`
-4. **Check paths** in `run_config.py` for accuracy
-5. **Open an issue** on GitHub with error messages and log files
+1. **Check logs**: Look in `data/processed/project_name/` for detailed error information
+2. **Test setup**: Run `python run.py --config` to verify configuration
+3. **AI testing**: Run `python code/S5_llmExtract_test.py` to test AI features
+4. **GUI logs**: Use "Save Log" button to save processing logs for troubleshooting
+5. **GitHub Issues**: Report bugs at the project's GitHub repository
 
-## 🔬 Technical Details
+---
 
-### Performance Optimization
-- **Streaming processing**: Handles large datasets without loading everything into memory
-- **Parallel processing**: Automatic CPU detection and worker pool management
-- **Resume capability**: Progress tracking prevents reprocessing completed work
-- **Efficient I/O**: Atomic file operations prevent corruption
+## 📊 Performance Guidelines
 
-### Data Integrity
-- **Checksum validation**: Ensures data integrity during processing
-- **Atomic operations**: Temporary files prevent partial writes
-- **Backup creation**: Original data is never modified
-- **Error logging**: Comprehensive audit trail
+### Processing Time Estimates
 
-### Security Considerations
-- **Isolated environment**: Virtual environment prevents system contamination
-- **Path validation**: Prevents directory traversal attacks
-- **Input sanitization**: Handles malformed DICOM files safely
-- **No network access**: Pipeline operates entirely offline
-
-## 📈 Performance Guidelines
+| Dataset Size | S1 (Indexing) | S2+S3 (Summary) | S4 (Archive) | S5 (AI) |
+|--------------|---------------|-----------------|--------------|---------|
+| 1,000 files | 5-15 min | 1-2 min | 5-10 min | 2-5 min |
+| 10,000 files | 30-90 min | 5-10 min | 30-60 min | 10-30 min |
+| 100,000 files | 2-6 hours | 15-30 min | 2-4 hours | 1-3 hours |
 
 ### System Requirements
 - **Minimum**: 4GB RAM, 2 CPU cores
 - **Recommended**: 8GB+ RAM, 4+ CPU cores
 - **Storage**: 2-3x the size of input data for temporary files
 
-### Optimization Tips
-```python
-# In run_config.py
-MAX_WORKERS = '8'           # Increase for more CPU cores
-S1_DICOM_CONCURRENCY = '4'  # Parallel DICOM processing
-S4_WORKERS = '4'            # Parallel ZIP creation
-ZIP_COMPRESSION_LEVEL = '1'  # Lower for speed, higher for compression
-```
+---
 
-### Batch Processing
-For multiple datasets:
-```bash
-# Process dataset 1
-python run.py --non-interactive
-# Edit S1_ROOT_DIR in run_config.py
-# Process dataset 2
-python run.py --non-interactive
-```
+## 🔐 Security & Compliance
+
+### For Medical Data (HIPAA/PHI)
+
+#### ✅ Recommended Setup
+- Use **local AI (Ollama)** for document processing
+- Store data on **encrypted drives**
+- Use **private networks** (no cloud storage during processing)
+- **Audit logs** are automatically created
+
+#### ⚠️ Important Considerations
+- **OpenAI option** sends data to external servers
+- **Network transfers** should use encryption
+- **User access** should be controlled and logged
+- **Data retention** policies should be defined
+
+### Data Privacy Features
+- **Local processing**: All stages can run completely offline
+- **No telemetry**: FICZall doesn't send usage data anywhere
+- **Open source**: Code can be audited and modified
+- **Audit trails**: Complete processing logs are maintained
+
+---
+
+## 🏥 Medical Data Disclaimer
+
+This software is designed for research and archival purposes. Ensure compliance with:
+- **HIPAA** (Health Insurance Portability and Accountability Act)
+- **GDPR** (General Data Protection Regulation)
+- **Local healthcare data protection regulations**
+
+Always verify that processed data maintains patient privacy and institutional compliance requirements.
+
+---
 
 ## 🤝 Contributing
 
@@ -460,22 +741,17 @@ cd FICZall-Find-Index-Clean-Zip-all-Dicom-Files-and-Reports
 python run.py --setup  # Creates development environment
 ```
 
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🏥 Medical Data Disclaimer
-
-This software is designed for research and archival purposes. Ensure compliance with:
-- HIPAA (Health Insurance Portability and Accountability Act)
-- GDPR (General Data Protection Regulation)
-- Local healthcare data protection regulations
-
-Always verify that processed data maintains patient privacy and institutional compliance requirements.
-
 ---
 
 **Need help?** 
-- 📖 See [README_USAGE.md](README_USAGE.md) for detailed usage instructions
-- 🐛 Report issues on GitHub
-- 💬 Join discussions in GitHub Discussions
+- 🖱️ **Try the GUI**: Run `python launch_gui.py` for a user-friendly interface
+- 📖 **Command-line users**: See `RUN_SCRIPT_GUIDE.md` for detailed run.py instructions
+- 🖥️ **GUI users**: See `GUI_USER_GUIDE.md` for complete GUI documentation
+- 🐛 **Report issues**: Use GitHub Issues with error logs
+- 💬 **Discussions**: Join GitHub Discussions for usage questions

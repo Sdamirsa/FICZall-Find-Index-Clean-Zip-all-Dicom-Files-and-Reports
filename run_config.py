@@ -93,21 +93,26 @@ if not desired_name_of_project or desired_name_of_project.strip() == "":
     # Get the last two folder names and flatten them
     path_parts = Path(Location_of_your_data).parts
     if len(path_parts) >= 2:
-        # Take last two parts and join with underscore
-        desired_name_of_project = f"{path_parts[-2]}_{path_parts[-1]}"
+        # Take last two parts and join with _._
+        desired_name_of_project = f"{path_parts[-2]}_._{path_parts[-1]}"
     else:
         # Fallback to just the last part
         desired_name_of_project = path_parts[-1] if path_parts else "dicom_project"
     
-    # Clean the name to be filesystem-friendly
+    # Clean the name to be filesystem-friendly (preserve _._ delimiter)
     import re
-    desired_name_of_project = re.sub(r'[^\w\-_]', '_', desired_name_of_project)
+    # First protect the _._ delimiter
+    temp_name = desired_name_of_project.replace("_._", "|||DELIMITER|||")
+    # Clean other characters
+    temp_name = re.sub(r'[^\w\-_]', '_', temp_name)
+    # Restore the _._ delimiter
+    desired_name_of_project = temp_name.replace("|||DELIMITER|||", "_._")
     print(f"Auto-generated project name: {desired_name_of_project}")
 
 # Create the project directory in data folder
 PROJECT_DIR = DATA_DIR / desired_name_of_project
 PROJECT_DIR.mkdir(parents=True, exist_ok=True)
-print(f"📁 Project directory: {PROJECT_DIR}")
+print(f"Project directory: {PROJECT_DIR}")
 
 # =============================================================================
 # GENERAL CONFIGURATION

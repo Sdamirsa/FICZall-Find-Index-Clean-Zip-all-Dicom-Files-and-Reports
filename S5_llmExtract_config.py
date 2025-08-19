@@ -195,10 +195,10 @@ class LLMConfig:
     """
     
     # Client Selection Configuration
-    CLIENT_TYPE: LLMClientType = LLMClientType(os.getenv("S5_LLM_CLIENT_TYPE", "auto"))
+    CLIENT_TYPE: LLMClientType = LLMClientType(os.getenv("S5_LLM_CLIENT_TYPE", "ollama"))
     
     # API Configuration (OpenAI-compatible)
-    BASE_URL: str = os.getenv("OPENAI_BASE_URL", "http://localhost:11434/v1")  
+    BASE_URL: str = os.getenv("OPENAI_BASE_URL", "http://localhost:11434/v1")
     API_KEY_ENV_VAR: str = "OPENAI_API_KEY"
     
     # Ollama-specific Configuration
@@ -206,7 +206,7 @@ class LLMConfig:
     OLLAMA_TIMEOUT: int = int(os.getenv("OLLAMA_TIMEOUT", "120"))
     
     # Model Configuration
-    MODEL_NAME: str = os.getenv("S5_LLM_MODEL", "llama3-groq-tool-use:8b-q8_0")  # gpt-oss:20b
+    MODEL_NAME: str = os.getenv("S5_LLM_MODEL", "qwen3:4b-instruct-2507-q8_0")  # Default Ollama model
     MAX_TOKENS: int = int(os.getenv("S5_LLM_MAX_TOKENS", "4096"))
     TEMPERATURE: float = float(os.getenv("S5_LLM_TEMPERATURE", "0.3"))
     
@@ -284,9 +284,9 @@ Key guidelines:
         """Get privacy warning based on configuration"""
         client_type = cls.get_client_type()
         if client_type == LLMClientType.OLLAMA or cls.is_local():
-            return "✓ Using LOCAL LLM - Patient data stays on this machine"
+            return "Using LOCAL LLM - Patient data stays on this machine"
         else:
-            return f"⚠️ WARNING: Using EXTERNAL API at {cls.BASE_URL}\n   Patient data will be sent to external servers!\n   Ensure HIPAA compliance and data agreements are in place."
+            return f"WARNING: Using EXTERNAL API at {cls.BASE_URL}\n   Patient data will be sent to external servers!\n   Ensure HIPAA compliance and data agreements are in place."
     
     @classmethod
     def get_ollama_options(cls) -> Dict[str, Any]:
@@ -305,7 +305,7 @@ def _validate_llm_config():
     required_attrs = [
         'CLIENT_TYPE', 'BASE_URL', 'API_KEY_ENV_VAR', 'OLLAMA_HOST', 'MODEL_NAME', 
         'MAX_TOKENS', 'TEMPERATURE', 'MAX_RETRIES', 'RETRY_DELAY', 'BATCH_SIZE', 
-        'CHUNK_SIZE', 'SYSTEM_PROMPT', 'OLLAMA_TIMEOUT', 'PARALLEL_WORKERS', 'OLLAMA_THINKING'
+        'CHUNK_SIZE', 'SYSTEM_PROMPT', 'OLLAMA_TIMEOUT', 'PARALLEL_WORKERS'
     ]
     
     missing_attrs = []

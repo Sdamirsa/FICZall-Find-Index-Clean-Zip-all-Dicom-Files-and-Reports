@@ -16,11 +16,11 @@ Features:
 - Same interface as run.py but with multi-location support
 
 Usage:
-    python runs.py                    # Interactive mode
-    python runs.py --config           # Show configuration
-    python runs.py --setup            # Setup only (venv + dependencies)
-    python runs.py --non-interactive  # Use existing configuration
-    python runs.py --resume           # Resume interrupted batch processing
+    python runMulti.py                    # Interactive mode
+    python runMulti.py --config           # Show configuration
+    python runMulti.py --setup            # Setup only (venv + dependencies)
+    python runMulti.py --non-interactive  # Use existing configuration
+    python runMulti.py --resume           # Resume interrupted batch processing
 
 This is the final script in the FICZall pipeline suite.
 """
@@ -36,9 +36,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-# Ensure we're using Python 3.6+
-if sys.version_info < (3, 6):
-    print("Error: Python 3.6 or higher is required.")
+# Ensure we're using Python 3.7+
+if sys.version_info < (3, 7):
+    print("Error: Python 3.7 or higher is required.")
     print(f"Current version: {sys.version}")
     sys.exit(1)
 
@@ -55,7 +55,7 @@ try:
     )
 except ImportError as e:
     print(f"Error: Cannot import required functions from run.py: {e}")
-    print("Make sure run.py is in the same directory as runs.py")
+    print("Make sure run.py is in the same directory as runMulti.py")
     sys.exit(1)
 
 # Try to import run_config, but don't fail if it doesn't exist
@@ -71,8 +71,8 @@ except ImportError:
 # BATCH PROCESSING CONSTANTS
 # =============================================================================
 
-BATCH_CONFIG_FILE = BASE_DIR / "batch_processing_config.json"
-BATCH_PROGRESS_FILE = BASE_DIR / "batch_processing_progress.json"
+BATCH_CONFIG_FILE = BASE_DIR / "runMulti_config.json"
+BATCH_PROGRESS_FILE = BASE_DIR / "runMulti_progress.json"
 
 # =============================================================================
 # BATCH CONFIGURATION FUNCTIONS
@@ -81,21 +81,21 @@ BATCH_PROGRESS_FILE = BASE_DIR / "batch_processing_progress.json"
 def get_multiple_locations() -> List[str]:
     """Get multiple data locations from user input."""
     print_header("MULTI-LOCATION DATA INPUT")
-    print(f"\n{Colors.BLUE}📁 Enter multiple data locations to process{Colors.ENDC}")
-    print(f"{Colors.GREEN}💡 TIP: You can process different hospitals, studies, or time periods{Colors.ENDC}")
+    print(f"\n{Colors.BLUE}Enter multiple data locations to process{Colors.ENDC}")
+    print(f"{Colors.GREEN}TIP: You can process different hospitals, studies, or time periods{Colors.ENDC}")
     print(f"   Examples:")
     print(f"   - C:/Hospital_A/CT_2024")
     print(f"   - C:/Hospital_B/MRI_Studies") 
     print(f"   - /data/Research_Project_1")
     print(f"   - /data/Research_Project_2")
-    print(f"\n{Colors.WARNING}⚠️  Each location will be processed using the SAME configuration{Colors.ENDC}")
+    print(f"\n{Colors.WARNING}WARNING: Each location will be processed using the SAME configuration{Colors.ENDC}")
     print(f"{Colors.WARNING}   Make sure all locations have similar data structure{Colors.ENDC}")
     
     locations = []
     location_num = 1
     
     while True:
-        print(f"\n📂 Data Location #{location_num}:")
+        print(f"\nData Location #{location_num}:")
         location = get_user_input(
             f"Enter path to DICOM data location #{location_num} (or press Enter to finish)",
             required=(location_num == 1)  # First location is required
@@ -145,8 +145,8 @@ def get_multiple_locations() -> List[str]:
 def configure_batch_pipeline() -> Dict[str, Any]:
     """Configure pipeline for batch processing with multiple locations."""
     print_header("BATCH PIPELINE CONFIGURATION")
-    print(f"\n{Colors.BLUE}🔧 Configure pipeline settings for ALL locations{Colors.ENDC}")
-    print(f"{Colors.GREEN}💡 These settings will be applied to every data location{Colors.ENDC}")
+    print(f"\n{Colors.BLUE}Configure pipeline settings for ALL locations{Colors.ENDC}")
+    print(f"{Colors.GREEN}These settings will be applied to every data location{Colors.ENDC}")
     
     # Get multiple locations first
     locations = get_multiple_locations()
@@ -154,10 +154,10 @@ def configure_batch_pipeline() -> Dict[str, Any]:
         return None
     
     # Configure pipeline stages (same as run.py but adapted for batch)
-    print(f"\n{Colors.BOLD}🔧 Select pipeline stages to run for ALL locations:{Colors.ENDC}")
-    print(f"{Colors.WARNING}ℹ️  Note: These stages will run for EVERY location{Colors.ENDC}")
-    print(f"   📋 Required stages: S1, S2, S3")
-    print(f"   ⚙️  Optional stages: S0 (extraction), S4 (ZIP archives), S5 (AI)")
+    print(f"\n{Colors.BOLD}Select pipeline stages to run for ALL locations:{Colors.ENDC}")
+    print(f"{Colors.WARNING}Note: These stages will run for EVERY location{Colors.ENDC}")
+    print(f"   Required stages: S1, S2, S3")
+    print(f"   Optional stages: S0 (extraction), S4 (ZIP archives), S5 (AI)")
     
     config = {'locations': locations}
     
@@ -181,8 +181,8 @@ def configure_batch_pipeline() -> Dict[str, Any]:
     
     # Configure S0_ZIP if enabled
     if config.get('RUN_S0_ZIP_EXTRACT') == 'true':
-        print(f"\n{Colors.BOLD}📂 S0 - ZIP Extraction Configuration:{Colors.ENDC}")
-        print(f"{Colors.WARNING}⚠️  ZIP extraction will look for ZIP files in each data location{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}S0 - ZIP Extraction Configuration:{Colors.ENDC}")
+        print(f"{Colors.WARNING}WARNING: ZIP extraction will look for ZIP files in each data location{Colors.ENDC}")
         
         workers = get_user_input(
             "Number of worker threads for parallel extraction",
@@ -204,8 +204,8 @@ def configure_batch_pipeline() -> Dict[str, Any]:
     
     # Configure S0_ISO if enabled
     if config.get('RUN_S0_ISO_EXTRACT') == 'true':
-        print(f"\n{Colors.BOLD}💿 S0 - ISO Extraction Configuration:{Colors.ENDC}")
-        print(f"{Colors.WARNING}⚠️  ISO extraction will look for ISO files in each data location{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}S0 - ISO Extraction Configuration:{Colors.ENDC}")
+        print(f"{Colors.WARNING}WARNING: ISO extraction will look for ISO files in each data location{Colors.ENDC}")
         
         poweriso_default = run_config.POWERISO_PATH if run_config else r"C:\Users\LEGION\Downloads\PowerISO.9.0.Portable\PowerISO.9.0.Portable\App\PowerISO\piso.exe"
         poweriso_path = get_user_input(
@@ -219,7 +219,7 @@ def configure_batch_pipeline() -> Dict[str, Any]:
     
     # Configure S3 processing parameters
     if config.get('RUN_S3_PROCESS') == 'true':
-        print(f"\n{Colors.BOLD}⚙️  S3 - Processing Configuration:{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}S3 - Processing Configuration:{Colors.ENDC}")
         
         min_files = get_user_input(
             "Minimum number of files per study",
@@ -229,7 +229,7 @@ def configure_batch_pipeline() -> Dict[str, Any]:
     
     # Configure S4 ZIP settings
     if config.get('RUN_S4_ZIP') == 'true':
-        print(f"\n{Colors.BOLD}📦 S4 - ZIP Configuration:{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}S4 - ZIP Configuration:{Colors.ENDC}")
         
         compression = get_user_input(
             "ZIP compression level (0-9, 9=max)",
@@ -245,8 +245,8 @@ def configure_batch_pipeline() -> Dict[str, Any]:
     
     # Configure S5 AI settings
     if config.get('RUN_S5_LLM_EXTRACT') == 'true':
-        print(f"\n{Colors.BOLD}🤖 S5 - LLM Document Extraction Configuration:{Colors.ENDC}")
-        print(f"{Colors.WARNING}⚠️  IMPORTANT: AI extraction will process documents from ALL locations{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}S5 - LLM Document Extraction Configuration:{Colors.ENDC}")
+        print(f"{Colors.WARNING}IMPORTANT: AI extraction will process documents from ALL locations{Colors.ENDC}")
         print(f"{Colors.WARNING}   Check S5_llmExtract_config.py for API settings and privacy{Colors.ENDC}")
         
         # Check if S5 dependencies are available
@@ -256,7 +256,7 @@ def configure_batch_pipeline() -> Dict[str, Any]:
             openai_spec = importlib.util.find_spec("openai")
             ollama_spec = importlib.util.find_spec("ollama")
             if pydantic_spec is None or openai_spec is None:
-                print(f"{Colors.WARNING}⚠️  S5 dependencies not fully installed. Run setup first.{Colors.ENDC}")
+                print(f"{Colors.WARNING}WARNING: S5 dependencies not fully installed. Run setup first.{Colors.ENDC}")
         except Exception:
             pass
         
@@ -273,7 +273,7 @@ def configure_batch_pipeline() -> Dict[str, Any]:
         config['S5_CHUNK_SIZE'] = chunk_size or '1000'
     
     # Global settings
-    print(f"\n{Colors.BOLD}⚙️  Global Processing Settings:{Colors.ENDC}")
+    print(f"\n{Colors.BOLD}Global Processing Settings:{Colors.ENDC}")
     
     max_workers = get_user_input(
         "Maximum worker threads (affects all stages)",
@@ -282,7 +282,7 @@ def configure_batch_pipeline() -> Dict[str, Any]:
     config['MAX_WORKERS'] = max_workers or '4'
     
     # Project naming strategy
-    print(f"\n{Colors.BOLD}📛 Project Naming Strategy:{Colors.ENDC}")
+    print(f"\n{Colors.BOLD}Project Naming Strategy:{Colors.ENDC}")
     naming_strategy = get_user_input(
         "Project naming strategy: 'auto' (use folder names) or 'custom' (you specify)",
         "auto"
@@ -301,7 +301,7 @@ def configure_batch_pipeline() -> Dict[str, Any]:
     config['created_at'] = datetime.now().isoformat()
     config['total_locations'] = len(locations)
     
-    print(f"\n{Colors.GREEN}✅ Batch configuration complete!{Colors.ENDC}")
+    print(f"\n{Colors.GREEN}Batch configuration complete!{Colors.ENDC}")
     print(f"   Total locations: {len(locations)}")
     print(f"   Stages per location: {sum(1 for k, v in config.items() if k.startswith('RUN_') and v == 'true')}")
     
@@ -362,29 +362,44 @@ def load_batch_progress() -> Optional[Dict[str, Any]]:
 # =============================================================================
 
 def generate_project_name(location: str, config: Dict[str, Any], location_index: int) -> str:
-    """Generate project name for a location."""
+    """Generate project name for a location using last two parent folders."""
     if config.get('NAMING_STRATEGY') == 'custom':
         base_name = config.get('BASE_PROJECT_NAME', 'batch_project')
         return f"{base_name}_{location_index:03d}"
     else:
-        # Auto-generate from folder name
+        # Auto-generate from last two parent folders
         location_path = Path(location)
-        folder_name = location_path.name
-        # Clean folder name for use as project name
-        clean_name = "".join(c for c in folder_name if c.isalnum() or c in "_-").strip()
+        path_parts = location_path.parts
+        
+        if len(path_parts) >= 2:
+            # Take last two parts and join with _._
+            project_name = f"{path_parts[-2]}_._{path_parts[-1]}"
+        else:
+            # Fallback to just the last part
+            project_name = path_parts[-1] if path_parts else f"location_{location_index:03d}"
+        
+        # Clean the project name (remove special characters that might cause issues, preserve _._)
+        # First replace the _._ temporarily to preserve it
+        project_name = project_name.replace("_._", "|||DELIMITER|||")
+        # Clean other characters
+        clean_name = "".join(c if c.isalnum() or c in "_-" else "_" for c in project_name)
+        # Restore the _._ delimiter
+        clean_name = clean_name.replace("|||DELIMITER|||", "_._")
+        
         if not clean_name:
             clean_name = f"location_{location_index:03d}"
+        
         return clean_name
 
 def run_single_location(location: str, config: Dict[str, Any], venv_path: Path, 
                        location_index: int, total_locations: int) -> bool:
     """Run pipeline for a single location."""
     print_header(f"PROCESSING LOCATION {location_index}/{total_locations}")
-    print(f"📁 Location: {location}")
+    print(f"Location: {location}")
     
     # Generate project name
     project_name = generate_project_name(location, config, location_index)
-    print(f"📛 Project name: {project_name}")
+    print(f"Project name: {project_name}")
     
     # Prepare configuration for this location
     location_config = config.copy()
@@ -453,9 +468,9 @@ def run_batch_pipeline(config: Dict[str, Any], venv_path: Path, resume: bool = F
         'current_location': None
     }
     
-    print(f"🚀 Processing {total_locations} locations SEQUENTIALLY with shared configuration")
-    print(f"📊 Each location will be completed fully before moving to the next")
-    print(f"📊 Starting from location: {start_index + 1}")
+    print(f"Processing {total_locations} locations SEQUENTIALLY with shared configuration")
+    print(f"Each location will be completed fully before moving to the next")
+    print(f"Starting from location: {start_index + 1}")
     
     # Process each location SEQUENTIALLY (one after another, not in parallel)
     overall_success = True
@@ -464,7 +479,7 @@ def run_batch_pipeline(config: Dict[str, Any], venv_path: Path, resume: bool = F
         location_index = i + 1
         
         print(f"\n{'='*60}")
-        print(f"🏥 LOCATION {location_index}/{total_locations}: {Path(location).name}")
+        print(f"LOCATION {location_index}/{total_locations}: {Path(location).name}")
         print(f"{'='*60}")
         
         # Update progress
@@ -532,7 +547,7 @@ def print_batch_summary(config: Dict[str, Any], progress: Dict[str, Any] = None)
         progress = load_batch_progress()
     
     # Configuration summary
-    print(f"\n{Colors.BOLD}📋 Configuration:{Colors.ENDC}")
+    print(f"\n{Colors.BOLD}Configuration:{Colors.ENDC}")
     print(f"   Total locations: {config.get('total_locations', len(config.get('locations', [])))}")
     print(f"   Naming strategy: {config.get('NAMING_STRATEGY', 'auto')}")
     
@@ -543,7 +558,7 @@ def print_batch_summary(config: Dict[str, Any], progress: Dict[str, Any] = None)
     
     # Progress summary
     if progress:
-        print(f"\n{Colors.BOLD}📊 Progress:{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}Progress:{Colors.ENDC}")
         completed = progress.get('completed_locations', 0)
         total = progress.get('total_locations', 0)
         failed = len(progress.get('failed_locations', []))
@@ -565,11 +580,11 @@ def print_batch_summary(config: Dict[str, Any], progress: Dict[str, Any] = None)
     
     # Locations summary
     if config.get('locations'):
-        print(f"\n{Colors.BOLD}📁 Data Locations:{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}Data Locations:{Colors.ENDC}")
         for i, location in enumerate(config['locations'], 1):
-            status = "✓" if progress and i <= progress.get('completed_locations', 0) else "⏳"
+            status = "[OK]" if progress and i <= progress.get('completed_locations', 0) else "[PENDING]"
             if progress and any(f['index'] == i for f in progress.get('failed_locations', [])):
-                status = "✗"
+                status = "[FAILED]"
             print(f"   {status} {i}. {location}")
 
 # =============================================================================
@@ -583,11 +598,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python runs.py                    # Interactive multi-location setup
-    python runs.py --config           # Show current batch configuration
-    python runs.py --setup            # Setup environment only
-    python runs.py --resume           # Resume interrupted batch processing
-    python runs.py --non-interactive  # Use existing configuration
+    python runMulti.py                    # Interactive multi-location setup
+    python runMulti.py --config           # Show current batch configuration
+    python runMulti.py --setup            # Setup environment only
+    python runMulti.py --resume           # Resume interrupted batch processing
+    python runMulti.py --non-interactive  # Use existing configuration
         """
     )
     
@@ -614,10 +629,10 @@ Examples:
         return 0
     
     print_header("MULTI-LOCATION DICOM PROCESSING PIPELINE")
-    print(f"📁 Repository: {BASE_DIR}")
-    print(f"🕐 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"\n{Colors.BLUE}🚀 Welcome to the BATCH processing tool!{Colors.ENDC}")
-    print(f"{Colors.GREEN}💡 This tool processes multiple data locations with the same settings{Colors.ENDC}")
+    print(f"Repository: {BASE_DIR}")
+    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n{Colors.BLUE}Welcome to the BATCH processing tool!{Colors.ENDC}")
+    print(f"{Colors.GREEN}This tool processes multiple data locations with the same settings{Colors.ENDC}")
     print(f"{Colors.GREEN}   Perfect for processing multiple hospitals, studies, or projects{Colors.ENDC}")
     
     # Check Python version
@@ -638,26 +653,54 @@ Examples:
         
         if args.setup:
             print_success("Setup completed successfully")
-            print(f"Next step: Run 'python runs.py' to configure batch processing")
+            print(f"Next step: Run 'python runMulti.py' to configure batch processing")
             return 0
     
-    # Load or create configuration
-    config = None
-    if args.resume or args.non_interactive:
+    # Ask user if they want to manually provide info or use configuration file
+    if not args.resume and not args.non_interactive:
+        print(f"\n{Colors.BLUE}How would you like to provide processing information?{Colors.ENDC}")
+        input_method = get_user_input(
+            "Enter 'm' for manual input in terminal or 'f' to use a configuration file",
+            "m"
+        ).lower()
+        
+        if input_method == 'f':
+            # Ask for configuration file location
+            config_file_path = get_user_input(
+                "Enter the path to the configuration file (or press Enter for default runMulti_config.json)",
+                str(BATCH_CONFIG_FILE)
+            )
+            
+            # Load configuration from the specified file
+            try:
+                config_file = Path(config_file_path)
+                if config_file.exists():
+                    with open(config_file, 'r') as f:
+                        config = json.load(f)
+                    print_success(f"Successfully loaded configuration from {config_file}")
+                else:
+                    print_error(f"Configuration file not found: {config_file}")
+                    print("Please run the script again and choose manual input or provide a valid configuration file.")
+                    return 1
+            except Exception as e:
+                print_error(f"Failed to load configuration file: {e}")
+                print("Please run the script again and choose manual input or provide a valid configuration file.")
+                return 1
+        else:
+            # Interactive configuration
+            config = configure_batch_pipeline()
+            if config is None:
+                print_error("Batch configuration cancelled")
+                return 1
+            
+            # Save configuration
+            if not save_batch_config(config):
+                return 1
+    else:
+        # Load existing configuration for resume or non-interactive mode
         config = load_batch_config()
         if not config:
             print_error("No batch configuration found. Run without --resume or --non-interactive first.")
-            return 1
-    
-    if not config and not args.non_interactive:
-        # Interactive configuration
-        config = configure_batch_pipeline()
-        if config is None:
-            print_error("Batch configuration cancelled")
-            return 1
-        
-        # Save configuration
-        if not save_batch_config(config):
             return 1
     
     if not config:
@@ -668,7 +711,7 @@ Examples:
     print_batch_summary(config)
     
     if not args.non_interactive and not args.resume:
-        print(f"\n{Colors.WARNING}⚠️  About to process {len(config['locations'])} locations{Colors.ENDC}")
+        print(f"\n{Colors.WARNING}WARNING: About to process {len(config['locations'])} locations{Colors.ENDC}")
         response = input("Proceed with batch processing? (y/n): ")
         if response.lower() != 'y':
             print("Batch processing cancelled")
@@ -686,13 +729,13 @@ Examples:
     if success:
         print_header("BATCH PROCESSING COMPLETED")
         print_success(f"All locations processed successfully in {elapsed/3600:.1f} hours")
-        print(f"\n{Colors.GREEN}🎉 Batch processing complete!{Colors.ENDC}")
+        print(f"\n{Colors.GREEN}Batch processing complete!{Colors.ENDC}")
         print(f"   Check the 'data/processed/' directory for results from each location")
     else:
         print_header("BATCH PROCESSING FINISHED WITH ERRORS")
         print_error("Some locations failed to process")
         print(f"   Total time: {elapsed/3600:.1f} hours")
-        print(f"   Use 'python runs.py --resume' to continue from where it stopped")
+        print(f"   Use 'python runMulti.py --resume' to continue from where it stopped")
     
     # Show final summary
     progress = load_batch_progress()
@@ -706,7 +749,7 @@ if __name__ == "__main__":
         sys.exit(main())
     except KeyboardInterrupt:
         print("\n" + Colors.WARNING + "Batch processing interrupted by user" + Colors.ENDC)
-        print("Use 'python runs.py --resume' to continue from where it stopped")
+        print("Use 'python runMulti.py --resume' to continue from where it stopped")
         sys.exit(130)
     except Exception as e:
         print_error(f"Unexpected error: {e}")
