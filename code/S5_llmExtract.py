@@ -884,7 +884,7 @@ You MUST return valid JSON only, no other text."""
                 return None
     
     def _dict_to_medical_extraction(self, data: Dict, file_path: str) -> Optional[MedicalReportExtraction]:
-        """Convert dictionary to MedicalReportExtraction with validation"""
+        """Convert dictionary to MedicalReportExtraction with validation""" 
         try:
             # Import required classes for patient info
             from S5_llmExtract_config import PatientInfo, PatientID, ImagingModality, BodyPart
