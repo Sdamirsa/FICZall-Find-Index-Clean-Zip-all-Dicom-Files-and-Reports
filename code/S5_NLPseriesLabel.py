@@ -12,7 +12,7 @@ Features:
 - Comprehensive medical terminology recognition
 - Outputs labeled data with confidence scores
 
-Author: Claude Code Assistant
+Author: SAA Safavi-Naini
 Version: 1.0
 """
 
